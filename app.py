@@ -1,4 +1,5 @@
 import os
+import random
 import streamlit as st
 import base64
 import time
@@ -70,121 +71,297 @@ model, model_columns = load_model()
 with open("assets/style.css") as f:
     css = f.read()
 
-def _bg64(path):
+# Load hero_bg.jpg as base64 for CSS background
+def _load_bg_b64():
     try:
-        with open(path, "rb") as f:
+        with open("assets/hero_bg.jpg", "rb") as f:
             return base64.b64encode(f.read()).decode()
     except Exception:
         return ""
-
-hero_b64 = _bg64("assets/hero_bg.jpg")
+_bg_b64 = _load_bg_b64()
+_bg_css = f"background-image:url(data:image/jpeg;base64,{_bg_b64});" if _bg_b64 else ""
 
 st.markdown(
     f"""<style>{css}
-[data-testid="stApp"]{{
-  background:{"url(data:image/jpeg;base64,{hero_b64}) center/cover no-repeat fixed," if hero_b64 else ""}
-  #0D0705;
-}}
-[data-testid="stApp"]::before{{
-  content:'';position:fixed;inset:0;z-index:0;
-  background:linear-gradient(180deg,rgba(13,7,5,0.45) 0%,rgba(13,7,5,0.65) 35%,rgba(13,7,5,0.88) 70%,#0D0705 100%);
-  pointer-events:none;
-}}
-[data-testid="stApp"] > *{{position:relative;z-index:1;}}
-[data-testid="stHeader"]{{background:transparent;}}
-[data-testid="stToolbar"]{{display:none;}}
-#MainMenu{{visibility:hidden;}}
-footer{{visibility:hidden;}}
-[data-testid="stSidebar"]{{background:#0D0705;}}
-[data-testid="stMarkdownContainer"] p{{color:rgba(248,242,235,0.7);}}
+/* ===== PAGE BACKGROUND (hero_bg.jpg) ===== */
+#root > div:first-child{{{_bg_css}background-size:cover;background-attachment:fixed;background-position:center;background-repeat:no-repeat;background-color:#120A06;}}
+[data-testid="stApp"]{{{_bg_css}background-size:cover !important;background-attachment:fixed !important;background-position:center !important;background-repeat:no-repeat !important;background-color:#120A06 !important;}}
+[data-testid="stAppViewBlockContainer"]{{background:transparent !important;}}
+[data-testid="stMain"]{{background:transparent !important;}}
+[data-testid="stMainBlockContainer"]{{background:transparent !important;}}
+[data-testid="stHeader"]{{background:transparent !important;}}
+[data-testid="stToolbar"]{{display:none !important;}}
+#MainMenu{{visibility:hidden !important;}}
+footer{{visibility:hidden !important;}}
+[data-testid="stSidebar"]{{background:#120A06 !important;}}
+.block-container{{padding-top:0 !important;padding-bottom:0 !important;background:transparent !important;max-width:1450px !important;margin:0 auto !important;padding-left:32px !important;padding-right:32px !important;}}
+
+/* ===== CINEMATIC HERO ===== */
+.hero-cinema{{position:relative;width:100%;min-height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;border-radius:0 0 32px 32px;}}
+.hero-slide{{position:absolute;inset:0;opacity:0;transition:opacity 1.8s ease-in-out;background-size:cover;background-position:center;animation:kenBurns 20s ease-in-out infinite alternate;}}
+.hero-slide.active{{opacity:1;}}
+@keyframes kenBurns{{from{{transform:scale(1);}}to{{transform:scale(1.08);}}}}
+.hero-overlay{{position:absolute;inset:0;z-index:1;}}
+.hero-content{{position:relative;z-index:2;text-align:center;max-width:1100px;padding:0 40px;}}
+.hero-badge{{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;background:rgba(215,162,78,0.10);border:1px solid rgba(215,162,78,0.30);border-radius:100px;color:#D7A24E;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:28px;}}
+.hero-badge-dot{{width:7px;height:7px;background:#D7A24E;border-radius:50%;animation:pulse 2s ease-in-out infinite;}}
+.hero-title{{font-family:'Playfair Display',serif;font-size:clamp(32px,5.5vw,72px);line-height:1.05;color:#F7F3ED;font-weight:700;letter-spacing:-2px;margin:0 0 24px 0;max-width:760px;margin-left:auto;margin-right:auto;}}
+.hero-title-gold{{color:#D7A24E;}}
+.hero-subtitle{{font-size:18px;line-height:1.8;color:#DDD4CB;max-width:650px;margin:0 auto 36px;}}
+.hero-stats{{display:flex;justify-content:center;gap:20px;flex-wrap:nowrap;margin-bottom:40px;}}
+.hero-stat{{text-align:center;flex:1;min-width:0;max-width:320px;padding:36px;background:rgba(38,26,20,0.65);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(215,162,78,0.15);border-radius:24px;box-shadow:0 10px 36px rgba(0,0,0,0.30),inset 0 1px 0 rgba(215,162,78,0.06);}}
+.hero-stat-val{{font-family:'Playfair Display',serif;font-size:56px;color:#D7A24E;font-weight:700;}}
+.hero-stat-label{{color:#A49C94;font-size:16px;margin-top:10px;letter-spacing:2px;text-transform:uppercase;font-weight:600;}}
+.hero-stat-divider{{display:none;}}
+.hero-pred-price{{font-family:'Playfair Display',serif;font-size:clamp(40px,7vw,54px);color:#D7A24E;font-weight:700;letter-spacing:-2px;margin:16px 0 8px 0;line-height:1;}}
+.hero-cta{{display:inline-block;padding:16px 44px;background:linear-gradient(135deg,#D7A24E,#C4942A,#B8862A);color:#120A06 !important;font-weight:700;font-size:16px;border-radius:14px;text-decoration:none !important;box-shadow:0 4px 20px rgba(215,162,78,0.20),0 0 0 1px rgba(215,162,78,0.15) inset;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);letter-spacing:0.3px;}}
+.hero-cta:hover{{transform:translateY(-3px);box-shadow:0 8px 32px rgba(215,162,78,0.35),0 0 40px rgba(215,162,78,0.12),0 0 0 1px rgba(215,162,78,0.30) inset;}}
+.hero-content a{{color:#120A06 !important;}}
+
+/* ===== GLOBAL CONTAINER ===== */
+.main-container{{max-width:1450px;margin:0 auto;padding:0 32px;}}
+
+/* ===== SECTION TITLE SYSTEM ===== */
+.section-badge{{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(215,162,78,0.08);border:1px solid rgba(215,162,78,0.18);border-radius:100px;color:#D7A24E;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}}
+.section-title{{font-family:'Playfair Display',serif;font-size:36px;color:#F7F3ED;font-weight:700;text-align:center;letter-spacing:-1px;}}
+.section-desc{{font-size:17px;color:#A49C94;text-align:center;max-width:540px;margin:0 auto 32px;}}
+
+/* ===== TYPOGRAPHY ===== */
+[data-testid="stMarkdownContainer"] p{{color:#E6E6E6;line-height:1.75;font-size:17px;}}
 [data-testid="stMarkdownContainer"] h1,
 [data-testid="stMarkdownContainer"] h2,
 [data-testid="stMarkdownContainer"] h3,
-[data-testid="stMarkdownContainer"] h4{{color:#FAF2EB;font-family:'Playfair Display',serif;}}
-.stHeader h1{{color:#FAF2EB;}}
-.stSubheader{{color:#FAF2EB;}}
+[data-testid="stMarkdownContainer"] h4{{color:#F7F3ED !important;font-family:'Playfair Display',serif !important;letter-spacing:-0.3px;}}
+.stSubheader{{color:#F7F3ED !important;font-family:'Playfair Display',serif !important;font-weight:700 !important;font-size:36px !important;letter-spacing:-0.3px;}}
+[data-testid="stCaptionContainer"]{{color:#D7A24E !important;font-size:11px !important;text-transform:uppercase !important;letter-spacing:2.5px !important;font-weight:700 !important;}}
+
+/* ===== METRIC CARDS (GLASSMORPHISM) ===== */
 [data-testid="stMetric"]{{
-  background:linear-gradient(135deg,rgba(30,18,12,0.7),rgba(42,28,18,0.55));
-  border:1px solid rgba(212,168,78,0.18);
-  border-radius:18px;padding:20px 24px;
-  backdrop-filter:blur(24px) saturate(140%);
-  box-shadow:0 8px 32px rgba(0,0,0,0.35),inset 0 1px 0 rgba(212,168,78,0.06);
-  transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
+  background:rgba(38,26,20,0.65) !important;
+  border:1px solid rgba(215,162,78,0.15) !important;
+  border-radius:24px !important;padding:36px !important;
+  backdrop-filter:blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter:blur(40px) saturate(180%) !important;
+  box-shadow:0 8px 32px rgba(0,0,0,0.30),inset 0 1px 0 rgba(215,162,78,0.08) !important;
+  transition:all 0.4s cubic-bezier(0.4,0,0.2,1) !important;
 }}
 [data-testid="stMetric"]:hover{{
-  transform:translateY(-4px);
-  border-color:rgba(212,168,78,0.35);
-  box-shadow:0 16px 48px rgba(0,0,0,0.4),0 0 24px rgba(212,168,78,0.08),inset 0 1px 0 rgba(212,168,78,0.1);
+  transform:translateY(-4px) !important;
+  border-color:rgba(215,162,78,0.30) !important;
+  box-shadow:0 16px 48px rgba(0,0,0,0.40),0 0 24px rgba(215,162,78,0.06),inset 0 1px 0 rgba(215,162,78,0.10) !important;
 }}
-[data-testid="stMetric"] label{{color:rgba(248,242,235,0.5) !important;font-size:11px !important;text-transform:uppercase;letter-spacing:1.4px;font-weight:600;}}
-[data-testid="stMetric"] [data-testid="stMetricValue"]{{color:#D4A84E !important;font-weight:700;text-shadow:0 0 20px rgba(212,168,78,0.15);}}
+[data-testid="stMetric"] label{{color:#A49C94 !important;font-size:15px !important;text-transform:none;letter-spacing:0;font-weight:600;}}
+[data-testid="stMetric"] [data-testid="stMetricValue"]{{color:#D7A24E !important;font-weight:700 !important;font-size:50px !important;text-shadow:0 0 20px rgba(215,162,78,0.12);}}
 [data-testid="stMetric"] [data-testid="stMetricDelta"]{{font-weight:600;}}
-div[data-testid="stHorizontalBlock"]{{gap:14px;}}
-.stExpander{{
-  background:linear-gradient(135deg,rgba(30,18,12,0.6),rgba(42,28,18,0.4));
-  border:1px solid rgba(212,168,78,0.1);
-  border-radius:16px;
-  backdrop-filter:blur(20px);
+
+/* ===== HORIZONTAL BLOCKS (COLUMNS) ===== */
+div[data-testid="stHorizontalBlock"]{{gap:16px !important;padding:0 !important;}}
+
+/* ===== SECTION CONTAINERS (GLASSMORPHISM) ===== */
+[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]{{
+  background:rgba(38,26,20,0.65) !important;
+  backdrop-filter:blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter:blur(40px) saturate(180%) !important;
+  border:1px solid rgba(215,162,78,0.10) !important;
+  border-radius:24px !important;
+  padding:36px !important;
+  box-shadow:0 10px 36px rgba(0,0,0,0.25),inset 0 1px 0 rgba(215,162,78,0.05) !important;
+  margin-bottom:8px !important;
+  transition:all 0.4s cubic-bezier(0.4,0,0.2,1) !important;
 }}
-.stExpander summary{{color:#FAF2EB;}}
-.stAlert{{
-  background:linear-gradient(135deg,rgba(30,18,12,0.6),rgba(42,28,18,0.4));
-  border:1px solid rgba(212,168,78,0.15);
-  border-radius:14px;
-  backdrop-filter:blur(16px);
+[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]:hover{{
+  border-color:rgba(215,162,78,0.18) !important;
+  box-shadow:0 16px 48px rgba(0,0,0,0.30),0 0 20px rgba(215,162,78,0.04),inset 0 1px 0 rgba(215,162,78,0.06) !important;
 }}
+
+/* ===== EXPANDER ===== */
+.stExpander{{background:rgba(38,26,20,0.65) !important;border:1px solid rgba(215,162,78,0.10) !important;border-radius:24px !important;backdrop-filter:blur(40px) !important;-webkit-backdrop-filter:blur(40px) !important;padding:24px !important;}}
+.stExpander summary{{color:#F7F3ED !important;font-size:17px !important;}}
+
+/* ===== ALERTS ===== */
+.stAlert{{background:rgba(38,26,20,0.65) !important;border:1px solid rgba(215,162,78,0.12) !important;border-radius:24px !important;backdrop-filter:blur(32px) !important;-webkit-backdrop-filter:blur(32px) !important;}}
+
+/* ===== BUTTONS (PREMIUM GOLD) ===== */
 .stButton > button, .stDownloadButton > button{{
-  background:linear-gradient(135deg,#D4A84E,#C4942A,#B8862A) !important;
-  color:#0D0705 !important;
-  border:none !important;
-  border-radius:14px !important;
-  font-weight:700 !important;
-  box-shadow:0 4px 24px rgba(212,168,78,0.4),
-             0 0 0 1px rgba(212,168,78,0.35) inset,
-             0 1px 0 rgba(255,255,255,0.1) inset !important;
-  transition:all 0.3s cubic-bezier(0.4,0,0.2,1) !important;
-  letter-spacing:0.3px;
+  background:linear-gradient(135deg,#D7A24E,#C4942A,#B8862A) !important;color:#120A06 !important;border:none !important;border-radius:14px !important;font-weight:700 !important;font-size:17px !important;
+  box-shadow:0 4px 24px rgba(215,162,78,0.35),0 0 0 1px rgba(215,162,78,0.30) inset,0 1px 0 rgba(255,255,255,0.10) inset !important;
+  transition:all 0.3s cubic-bezier(0.4,0,0.2,1) !important;letter-spacing:0.3px;
 }}
 .stButton > button:hover, .stDownloadButton > button:hover{{
-  background:linear-gradient(135deg,#E8C060,#D4A84E,#C4942A) !important;
-  transform:translateY(-2px) !important;
-  box-shadow:0 8px 36px rgba(212,168,78,0.55),
-             0 0 0 1px rgba(212,168,78,0.5) inset,
-             0 0 60px rgba(212,168,78,0.12) !important;
+  background:linear-gradient(135deg,#E8C060,#D7A24E,#C4942A) !important;transform:translateY(-2px) !important;
+  box-shadow:0 8px 36px rgba(215,162,78,0.50),0 0 40px rgba(215,162,78,0.15),0 0 0 1px rgba(215,162,78,0.45) inset !important;
 }}
 .stButton > button:active{{transform:translateY(0) !important;}}
-.stProgress > div > div > div{{background:linear-gradient(90deg,#C4942A,#D4A84E,#E8C060);}}
-.section-divider{{max-width:1200px;margin:0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.15),transparent);}}
-.premium-card{{
-  background:linear-gradient(135deg,rgba(30,18,12,0.7),rgba(42,28,18,0.5));
-  backdrop-filter:blur(24px) saturate(140%);
-  border:1px solid rgba(212,168,78,0.15);
-  border-radius:22px;padding:30px 34px;
-  box-shadow:0 10px 36px rgba(0,0,0,0.3),inset 0 1px 0 rgba(212,168,78,0.06);
-  transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
+
+/* ===== WIDGETS ===== */
+.stSlider > div > div > div > div, .stSlider > div > div > div > div > div {{background-color:#D7A24E !important;border-color:#D7A24E !important;}}
+.stNumberInput > div > div > input {{background:rgba(38,26,20,0.65) !important;border:1px solid rgba(215,162,78,0.10) !important;border-radius:14px !important;color:#F7F3ED !important;padding:14px 18px !important;font-size:17px !important;}}
+.stNumberInput > div > div > input:focus {{border-color:rgba(215,162,78,0.4) !important;box-shadow:0 0 0 2px rgba(215,162,78,0.10) !important;}}
+.stSelectbox > div > div {{background:rgba(38,26,20,0.65) !important;border:1px solid rgba(215,162,78,0.10) !important;border-radius:14px !important;color:#F7F3ED !important;}}
+.stProgress > div > div > div{{background:linear-gradient(90deg,#C4942A,#D7A24E,#E8C060);}}
+
+/* ===== SECTION DIVIDER ===== */
+.section-divider{{max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.20),transparent);}}
+
+/* ===== PREMIUM CARD ===== */
+.premium-card{{background:rgba(38,26,20,0.65);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(215,162,78,0.15);border-radius:24px;padding:36px;box-shadow:0 10px 36px rgba(0,0,0,0.30),inset 0 1px 0 rgba(215,162,78,0.06);transition:all 0.4s cubic-bezier(0.4,0,0.2,1);}}
+.premium-card:hover{{transform:translateY(-4px);border-color:rgba(215,162,78,0.30);box-shadow:0 20px 56px rgba(0,0,0,0.40),0 0 28px rgba(215,162,78,0.06),inset 0 1px 0 rgba(215,162,78,0.10);}}
+.card-title{{color:#F1C76B;font-size:24px;font-weight:600;margin-bottom:8px;}}
+.card-content{{color:#E6E6E6;font-size:17px;line-height:1.75;}}
+.card-label{{color:#A49C94;font-size:15px;}}
+
+/* ===== PREDICTION FORM ===== */
+.pred-form{{max-width:1450px;margin:0 auto;}}
+.pred-form label{{color:#E6E6E6 !important;font-size:15px !important;font-weight:600 !important;}}
+
+/* ===== PROPERTY IMAGE ===== */
+.prop-image{{border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.40),0 0 0 1px rgba(215,162,78,0.15) inset;height:520px;}}
+.prop-image img{{width:100%;height:100%;object-fit:cover;}}
+
+/* ===== ESTIMATED VALUE ===== */
+.est-price{{font-family:'Playfair Display',serif;font-size:54px;color:#D7A24E;font-weight:700;letter-spacing:-2px;}}
+.est-confidence{{color:#4CAF50;font-size:17px;font-weight:600;}}
+
+/* ===== EXECUTIVE SUMMARY ===== */
+.exec-summary{{max-width:900px;margin:0 auto;padding:36px;}}
+.exec-summary p{{font-size:17px;line-height:1.9;color:#E6E6E6;}}
+
+/* ===== INVESTMENT SCORE ===== */
+.invest-rating{{font-family:'Playfair Display',serif;font-size:54px;color:#D7A24E;font-weight:700;}}
+.invest-stars{{font-size:36px;color:#D7A24E;}}
+
+/* ===== 2-COLUMN FACTS ===== */
+.facts-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;}}
+.fact-item{{display:flex;justify-content:space-between;padding:16px 20px;background:rgba(38,26,20,0.50);border-radius:16px;border:1px solid rgba(215,162,78,0.08);}}
+.fact-label{{color:#A49C94;font-size:15px;}}
+.fact-value{{color:#F7F3ED;font-weight:600;font-size:17px;}}
+
+/* ===== HIGHLIGHT CARDS ===== */
+.highlight-card{{padding:20px 24px;background:rgba(38,26,20,0.50);border-radius:24px;border:1px solid rgba(215,162,78,0.10);margin-bottom:12px;}}
+.highlight-card-title{{color:#F7F3ED;font-weight:600;font-size:20px;margin-bottom:6px;}}
+.highlight-card-desc{{color:#A49C94;font-size:17px;line-height:1.6;}}
+
+/* ===== DRIVE TABLE ===== */
+.drive-row{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:16px 24px;background:rgba(38,26,20,0.50);border-radius:16px;border:1px solid rgba(215,162,78,0.08);margin-bottom:10px;}}
+.drive-factor{{color:#F7F3ED;font-weight:600;font-size:17px;}}
+.drive-contrib{{color:#A49C94;font-size:17px;}}
+.drive-impact{{font-weight:700;font-size:17px;}}
+
+/* ===== ASSESSMENT CARDS ===== */
+.assess-card{{text-align:center;padding:24px;background:rgba(38,26,20,0.50);border-radius:24px;border:1px solid rgba(215,162,78,0.10);}}
+.assess-label{{color:#A49C94;font-size:15px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}}
+.assess-value{{color:#F7F3ED;font-weight:700;font-size:24px;}}
+
+/* ===== MARKET BENCHMARK ===== */
+.benchmark-card{{padding:36px;background:rgba(38,26,20,0.50);border-radius:24px;border:1px solid rgba(215,162,78,0.10);text-align:center;}}
+
+/* ===== SIMILAR PROPERTY IMAGE ===== */
+.sim-img{{width:280px;height:180px;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.30);}}
+.sim-img img{{width:100%;height:100%;object-fit:cover;}}
+
+/* ===== FORECAST CARDS ===== */
+.forecast-card{{text-align:center;padding:36px;background:rgba(38,26,20,0.50);border-radius:24px;border:1px solid rgba(215,162,78,0.10);}}
+.forecast-year{{color:#A49C94;font-size:15px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;}}
+.forecast-val{{font-family:'Playfair Display',serif;font-size:36px;color:#D7A24E;font-weight:700;}}
+
+/* ===== RECOMMENDATION CARDS ===== */
+.rec-card{{padding:20px 24px;background:rgba(38,26,20,0.50);border-radius:24px;border:1px solid rgba(215,162,78,0.10);margin-bottom:10px;border-left:4px solid;}}
+.rec-card-green{{border-left-color:#4CAF50;}}
+.rec-card-gold{{border-left-color:#D7A24E;}}
+.rec-card-red{{border-left-color:#E57373;}}
+.rec-card-blue{{border-left-color:#5B8DEF;}}
+
+/* ===== SCROLL ANIMATION ===== */
+.fade-in-section{{opacity:0;transform:translateY(20px);transition:opacity 0.6s ease-out,transform 0.6s ease-out;}}
+.fade-in-section.visible{{opacity:1;transform:translateY(0);}}
+
+/* ===== TEXT UTILITIES ===== */
+.gold-text{{color:#D7A24E;}}.green-text{{color:#4CAF50;}}.red-text{{color:#E57373;}}.amber-text{{color:#FFD060;}}.muted-text{{color:#A49C94;}}.primary-text{{color:#F7F3ED;}}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{{width:5px;}}::-webkit-scrollbar-track{{background:#120A06;}}::-webkit-scrollbar-thumb{{background:#D7A24E;border-radius:10px;}}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp{{from{{opacity:0;transform:translateY(20px);}}to{{opacity:1;transform:translateY(0);}}}}
+@keyframes fadeIn{{from{{opacity:0;}}to{{opacity:1;}}}}
+@keyframes pulse{{0%,100%{{opacity:1;transform:scale(1);}}50%{{opacity:0.4;transform:scale(1.4);}}}}
+@keyframes slideIn{{from{{opacity:0;transform:translateY(30px);}}to{{opacity:1;transform:translateY(0);}}}}
+
+/* ===== LOADING ANIMATION ===== */
+.loading-bar{{height:4px;background:rgba(215,162,78,0.2);border-radius:4px;overflow:hidden;margin:8px 0;}}
+.loading-bar-fill{{height:100%;background:linear-gradient(90deg,#C4942A,#D7A24E,#E8C060);border-radius:4px;transition:width 0.6s ease;}}
+
+/* ===== RESPONSIVE: TABLET (max-width 900px) ===== */
+@media(max-width:900px){{
+  .nav-responsive{{padding:12px 24px !important;}}
+  .nav-links{{gap:20px !important;font-size:13px !important;}}
+  .hero-content{{padding:0 24px;max-width:100%;}}
+  .hero-title{{letter-spacing:-1px;}}
+  .hero-stats{{flex-wrap:wrap;gap:16px;}}
+  .hero-stat{{max-width:100%;flex:0 0 calc(50% - 8px);}}
+  [data-testid="stMetric"]{{padding:24px !important;border-radius:20px !important;}}
+  [data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]{{padding:28px !important;border-radius:20px !important;}}
+  .premium-card{{padding:28px !important;border-radius:20px !important;}}
+  .facts-grid{{grid-template-columns:1fr;}}
+  .section-divider{{margin:80px auto !important;}}
 }}
-.premium-card:hover{{
-  transform:translateY(-4px);
-  border-color:rgba(212,168,78,0.3);
-  box-shadow:0 20px 56px rgba(0,0,0,0.4),0 0 28px rgba(212,168,78,0.08),inset 0 1px 0 rgba(212,168,78,0.1);
+
+/* ===== RESPONSIVE: MOBILE (max-width 640px) ===== */
+@media(max-width:640px){{
+  .nav-responsive{{padding:10px 16px !important;width:min(96%,1200px) !important;}}
+  .nav-links{{gap:14px !important;font-size:12px !important;}}
+  .hero-cinema{{min-height:100svh;border-radius:0 0 20px 20px;}}
+  .hero-content{{padding:0 16px;}}
+  .hero-badge{{font-size:10px;padding:6px 14px;margin-bottom:20px;}}
+  .hero-title{{font-size:clamp(26px,7vw,36px);letter-spacing:-0.5px;margin-bottom:16px;}}
+  .hero-subtitle{{font-size:16px;line-height:1.6;margin-bottom:24px;}}
+  .hero-stats{{flex-direction:column;gap:12px;}}
+  .hero-stat{{max-width:100%;padding:24px 20px;}}
+  .hero-stat-val{{font-size:40px;}}
+  .hero-stat-label{{font-size:14px;}}
+  .hero-cta{{padding:12px 28px;font-size:14px;}}
+  .hero-pred-price{{font-size:clamp(32px,10vw,48px);}}
+  [data-testid="stMetric"]{{padding:20px !important;border-radius:16px !important;}}
+  [data-testid="stMetric"] label{{font-size:13px !important;}}
+  [data-testid="stMetric"] [data-testid="stMetricValue"]{{font-size:36px !important;}}
+  [data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]{{padding:20px !important;border-radius:16px !important;}}
+  .premium-card{{padding:20px !important;border-radius:16px !important;}}
+  div[data-testid="stHorizontalBlock"]{{gap:10px !important;}}
+  .section-divider{{margin:60px auto !important;}}
+  .prop-image{{height:300px;}}
+  .est-price{{font-size:42px;}}
+  .invest-rating{{font-size:42px;}}
+  .drive-row{{grid-template-columns:1fr;gap:8px;}}
+  .sim-img{{width:100%;height:160px;}}
+  .card-title{{font-size:20px;}}
+  .card-content{{font-size:15px;}}
+  .fact-item{{padding:12px 16px;}}
+  .fact-label{{font-size:13px;}}
+  .fact-value{{font-size:15px;}}
 }}
-.gold-text{{color:#D4A84E;}}
-.green-text{{color:#4ECB8D;}}
-.red-text{{color:#FF6B6B;}}
-.amber-text{{color:#FFD060;}}
-.muted-text{{color:rgba(248,242,235,0.45);}}
-.primary-text{{color:#FAF2EB;}}
+
+/* ===== RESPONSIVE: VERY SMALL (max-width 400px) ===== */
+@media(max-width:400px){{
+  .nav-responsive{{padding:8px 12px !important;}}
+  .nav-links{{gap:10px !important;font-size:11px !important;}}
+  .hero-title{{font-size:22px;}}
+  .hero-badge{{font-size:9px;padding:5px 10px;}}
+  .hero-stat-val{{font-size:32px;}}
+  [data-testid="stMetric"]{{padding:16px !important;}}
+  [data-testid="stMetric"] [data-testid="stMetricValue"]{{font-size:28px !important;}}
+}}
 </style>""",
     unsafe_allow_html=True,
 )
+
 
 # ============================================================
 # NAVBAR
 # ============================================================
 st.markdown(
-    '<div style="position:fixed;top:16px;left:50%;transform:translateX(-50%);width:min(92%,1200px);display:flex;justify-content:space-between;align-items:center;padding:14px 36px;background:rgba(13,7,5,0.75);backdrop-filter:blur(28px) saturate(180%);border:1px solid rgba(212,168,78,0.15);border-radius:20px;z-index:9999;box-shadow:0 8px 36px rgba(0,0,0,0.5),inset 0 1px 0 rgba(212,168,78,0.06);">'
-    '<span style="font-family:Playfair Display,serif;font-size:24px;color:#D4A84E;font-weight:700;">HomeSense AI</span>'
-    '<span style="display:flex;gap:32px;color:rgba(250,242,235,0.65);font-size:14px;font-weight:500;">'
+    '<div class="nav-responsive" style="position:fixed;top:16px;left:50%;transform:translateX(-50%);width:min(92%,1200px);display:flex;justify-content:space-between;align-items:center;padding:14px 36px;background:rgba(13,7,5,0.75);backdrop-filter:blur(28px) saturate(180%);border:1px solid rgba(215,162,78,0.15);border-radius:20px;z-index:9999;box-shadow:0 8px 36px rgba(0,0,0,0.5),inset 0 1px 0 rgba(215,162,78,0.06);">'
+    '<span style="font-family:Playfair Display,serif;font-size:clamp(18px,2.5vw,24px);color:#D7A24E;font-weight:700;">HomeSense AI</span>'
+    '<span class="nav-links" style="display:flex;gap:32px;color:rgba(248,245,240,0.65);font-size:14px;font-weight:500;">'
     '<a href="#home" style="color:inherit;text-decoration:none;">Home</a> '
     '<a href="#predict" style="color:inherit;text-decoration:none;">Predict</a> '
     '<a href="#analytics" style="color:inherit;text-decoration:none;">Analytics</a> '
@@ -194,53 +371,180 @@ st.markdown(
 )
 
 # ============================================================
-# HERO
+# HERO — CINEMATIC WITH ROTATING HOUSE IMAGES
 # ============================================================
 st.markdown('<div id="home"></div>', unsafe_allow_html=True)
 
-hero_l, hero_r = st.columns([1, 1], gap="large")
-with hero_l:
-    st.markdown(
-        '<div style="padding:60px 0 0 0;">'
-        '<span style="display:inline-flex;align-items:center;gap:8px;padding:8px 18px;background:rgba(212,168,78,0.1);border:1px solid rgba(212,168,78,0.3);border-radius:100px;color:#D4A84E;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">'
-        '<span style="width:7px;height:7px;background:#D4A84E;border-radius:50%;animation:pulse 2s ease-in-out infinite;"></span> AI-Powered Valuation Engine</span></div>',
-        unsafe_allow_html=True,
+# ── Load ALL house images for hero rotation ──
+HOUSE_CATS = ["starter","cottage","ranch","townhouse","suburban",
+              "craftsman","colonial","modern","luxury","mansion"]
+HOUSE_DIR = "assets/houses"
+
+def _load_b64(path):
+    try:
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except Exception:
+        return ""
+
+# Collect one representative image per category (first available)
+cat_images = {}
+for cat in HOUSE_CATS:
+    cat_dir = os.path.join(HOUSE_DIR, cat)
+    if not os.path.isdir(cat_dir):
+        continue
+    for fname in sorted(os.listdir(cat_dir)):
+        if fname.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+            b64 = _load_b64(os.path.join(cat_dir, fname))
+            if b64:
+                cat_images[cat] = (b64, fname)
+            break
+
+# ── Determine hero state: prediction-driven or rotating showcase ──
+_prediction_made = 'prediction' in dir() and prediction is not None and np.isfinite(prediction)
+_pred_image_b64 = ""
+_pred_value = 0
+_pred_category = ""
+_pred_label = ""
+
+if _prediction_made:
+    _pred_category = profile.get("category", "suburban") if profile else "suburban"
+    _pred_label = profile.get("label", "Property") if profile else "Property"
+    _pred_value = float(prediction)
+    if _pred_category in cat_images:
+        _pred_image_b64 = cat_images[_pred_category][0]
+    elif cat_images:
+        _pred_image_b64 = list(cat_images.values())[0][0]
+
+# ── Build showcase images (shuffled on every reload) ──
+showcase_items = list(cat_images.values())
+random.shuffle(showcase_items)
+showcase_b64s = [item[0] for item in showcase_items if item[0]]
+if not showcase_b64s and _pred_image_b64:
+    showcase_b64s = [_pred_image_b64]
+
+# ── Overlay strength adapts per category brightness ──
+LIGHT_CATS  = {"starter", "cottage"}
+MEDIUM_CATS = {"ranch", "townhouse", "suburban"}
+DARK_CATS   = {"modern", "luxury", "mansion", "colonial", "craftsman"}
+
+def _overlay_for(cat):
+    if cat in LIGHT_CATS:
+        return "0.40","0.55","0.75","0.88"
+    if cat in DARK_CATS:
+        return "0.25","0.40","0.60","0.85"
+    return "0.30","0.45","0.65","0.85"
+
+# ── Build hero HTML ──
+if _prediction_made:
+    # Prediction-driven: single image, no rotation
+    o_top, o_mid, o_low, o_bot = _overlay_for(_pred_category)
+    hero_html = (
+        f'<div class="hero-cinema" id="hero-cinema" '
+        f'data-predicted="true" data-pred-value="{_pred_value:.0f}" '
+        f'data-pred-category="{_pred_category}">'
+        f'<div class="hero-slide active" style="background-image:url(data:image/jpeg;base64,{_pred_image_b64});"></div>'
+        f'<div class="hero-overlay" style="background:linear-gradient(180deg,'
+        f'rgba(13,7,5,{o_top}) 0%,rgba(13,7,5,{o_mid}) 35%,'
+        f'rgba(13,7,5,{o_low}) 70%,rgba(13,7,5,{o_bot}) 100%);"></div>'
+        f'<div class="hero-content">'
+        f'<div class="hero-badge"><span class="hero-badge-dot"></span> {_pred_label}</div>'
+        f'<h1 class="hero-title">Estimated Value</h1>'
+        f'<div class="hero-pred-price" id="hero-pred-price" '
+        f'data-target="{_pred_value:.0f}">$0</div>'
+        f'<div class="hero-pred-sub" style="color:rgba(248,245,240,0.5);font-size:16px;margin-top:8px;">'
+        f'Based on {_pred_category.title()} classification &middot; {inputs.get("GrLivArea",0):,} sq ft &middot; '
+        f'Quality {inputs.get("OverallQual",5)}/10</div>'
+        f'<a href="#analytics" class="hero-cta" style="margin-top:28px;">View Full Analysis</a>'
+        f'</div>'
+        f'</div>'
     )
-    st.markdown(
-        '<h1 style="font-family:Playfair Display,serif;font-size:clamp(40px,5.5vw,70px);line-height:1.08;color:#FAF2EB;font-weight:700;letter-spacing:-1.5px;margin:24px 0;">'
-        'Predict Real Estate<br>Value With <span style="color:#D4A84E;">Precision</span></h1>',
-        unsafe_allow_html=True,
+    hero_js = """
+    <script>
+    (function(){
+      var el = document.getElementById('hero-pred-price');
+      if(!el) return;
+      var target = parseFloat(el.getAttribute('data-target'));
+      var duration = 1800;
+      var start = performance.now();
+      function animate(now){
+        var elapsed = now - start;
+        var progress = Math.min(elapsed / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var current = Math.round(target * eased);
+        el.textContent = '$' + current.toLocaleString('en-US');
+        if(progress < 1) requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+    })();
+    </script>
+    """
+else:
+    # Rotating showcase: random start, cycle every 4s
+    slides_html = ""
+    for i, b64 in enumerate(showcase_b64s):
+        active = " active" if i == 0 else ""
+        slides_html += f'<div class="hero-slide{active}" style="background-image:url(data:image/jpeg;base64,{b64});"></div>'
+    # First image determines initial overlay
+    first_cat = None
+    for cat in HOUSE_CATS:
+        if cat in cat_images and cat_images[cat][0] == showcase_b64s[0]:
+            first_cat = cat
+            break
+    o_top, o_mid, o_low, o_bot = _overlay_for(first_cat or "suburban")
+
+    hero_html = (
+        f'<div class="hero-cinema" id="hero-cinema" data-predicted="false">'
+        f'{slides_html}'
+        f'<div class="hero-overlay" style="background:linear-gradient(180deg,'
+        f'rgba(13,7,5,{o_top}) 0%,rgba(13,7,5,{o_mid}) 35%,'
+        f'rgba(13,7,5,{o_low}) 70%,rgba(13,7,5,{o_bot}) 100%);"></div>'
+        f'<div class="hero-content">'
+        f'<h1 class="hero-title">Predict Real Estate<br>Value With <span class="hero-title-gold">Precision</span></h1>'
+        f'<p class="hero-subtitle">Leverage machine learning trained on 1,460 property records to deliver accurate, explainable house price predictions in seconds.</p>'
+        f'<div class="hero-stats">'
+        f'<div class="hero-stat"><div class="hero-stat-val">$163K</div><div class="hero-stat-label">Median Value</div></div>'
+        f'<div class="hero-stat-divider"></div>'
+        f'<div class="hero-stat"><div class="hero-stat-val">1,460</div><div class="hero-stat-label">Properties Analyzed</div></div>'
+        f'<div class="hero-stat-divider"></div>'
+        f'<div class="hero-stat"><div class="hero-stat-val">68%</div><div class="hero-stat-label">Within 10% Accuracy</div></div>'
+        f'</div>'
+        f'<a href="#predict" class="hero-cta">Predict Now</a>'
+        f'</div>'
+        f'</div>'
     )
-    st.markdown(
-        '<p style="font-size:18px;line-height:1.75;color:rgba(248,242,235,0.55);max-width:500px;">'
-        'Leverage machine learning trained on 1,460 property records to deliver accurate, explainable house price predictions in seconds.</p>',
-        unsafe_allow_html=True,
-    )
-    st.markdown("#")
-    st.link_button("Predict Now", "#predict")
-with hero_r:
-    st.markdown("")
-    st.markdown("")
-    st.markdown("")
-    with st.container():
-        st.metric(label="Median Home Value", value="$163,000")
-        st.caption("1,460 Properties Analyzed")
+    hero_js = """
+    <script>
+    (function(){
+      var slides = document.querySelectorAll('#hero-cinema .hero-slide');
+      if(slides.length <= 1) return;
+      var current = 0;
+      setInterval(function(){
+        slides[current].classList.remove('active');
+        current = (current + 1) % slides.length;
+        slides[current].classList.add('active');
+      }, 4000);
+    })();
+    </script>
+    """
+
+st.markdown(hero_html + hero_js, unsafe_allow_html=True)
 
 # ============================================================
 # TRUST METRICS
 # ============================================================
-st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
 
 st.markdown(
-    '<div style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(212,168,78,0.08);border:1px solid rgba(212,168,78,0.18);border-radius:100px;color:#D4A84E;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Why HomeSense</span></div>',
+    '<div style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(215,162,78,0.08);border:1px solid rgba(215,162,78,0.18);border-radius:100px;color:#D7A24E;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Why HomeSense</span></div>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<h2 style="font-family:Playfair Display,serif;font-size:clamp(30px,4vw,48px);color:#FAF2EB;font-weight:700;text-align:center;letter-spacing:-1px;">Trusted by Data</h2>',
+    '<h2 style="font-family:Playfair Display,serif;font-size:42px;color:#F7F3ED;font-weight:700;text-align:center;letter-spacing:-1px;">Trusted by Data</h2>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<p style="font-size:17px;color:rgba(248,242,235,0.45);text-align:center;max-width:540px;margin:0 auto 32px;">Built on rigorous machine learning research with full transparency in how every prediction is made.</p>',
+    '<p style="font-size:18px;color:#A49C94;text-align:center;max-width:520px;margin:0 auto 40px;">Built on rigorous machine learning research with full transparency in how every prediction is made.</p>',
     unsafe_allow_html=True,
 )
 
@@ -257,18 +561,18 @@ with t4:
 # ============================================================
 # FEATURES
 # ============================================================
-st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
 
 st.markdown(
-    '<div style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(212,168,78,0.08);border:1px solid rgba(212,168,78,0.18);border-radius:100px;color:#D4A84E;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Capabilities</span></div>',
+    '<div style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(215,162,78,0.08);border:1px solid rgba(215,162,78,0.18);border-radius:100px;color:#D7A24E;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Capabilities</span></div>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<h2 style="font-family:Playfair Display,serif;font-size:clamp(30px,4vw,48px);color:#FAF2EB;font-weight:700;text-align:center;letter-spacing:-1px;">Built for Intelligence</h2>',
+    '<h2 style="font-family:Playfair Display,serif;font-size:42px;color:#F7F3ED;font-weight:700;text-align:center;letter-spacing:-1px;">Built for Intelligence</h2>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<p style="font-size:17px;color:rgba(248,242,235,0.45);text-align:center;max-width:540px;margin:0 auto 32px;">Every feature is engineered to deliver insights that matter.</p>',
+    '<p style="font-size:18px;color:#A49C94;text-align:center;max-width:540px;margin:0 auto 32px;">Every feature is engineered to deliver insights that matter.</p>',
     unsafe_allow_html=True,
 )
 
@@ -276,52 +580,63 @@ f1, f2, f3, f4 = st.columns(4)
 with f1:
     st.markdown(
         '<div class="premium-card" style="text-align:center;">'
-        '<div style="font-size:36px;margin-bottom:12px;">target</div>'
-        '<div style="color:#FAF2EB;font-weight:700;font-size:16px;margin-bottom:8px;">AI Price Prediction</div>'
-        '<div style="color:rgba(248,242,235,0.45);font-size:14px;line-height:1.6;">Linear regression model trained on 245 property features to deliver accurate market valuations.</div></div>',
+        '<div style="width:56px;height:56px;margin:0 auto 16px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:16px;display:flex;align-items:center;justify-content:center;">'
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D7A24E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>'
+        '<div style="color:#F7F3ED;font-weight:700;font-size:16px;margin-bottom:8px;">AI Price Prediction</div>'
+        '<div style="color:#A49C94;font-size:14px;line-height:1.6;">ML-powered valuation trained on 245 property features.</div></div>',
         unsafe_allow_html=True,
     )
 with f2:
     st.markdown(
         '<div class="premium-card" style="text-align:center;">'
-        '<div style="font-size:36px;margin-bottom:12px;">search</div>'
-        '<div style="color:#FAF2EB;font-weight:700;font-size:16px;margin-bottom:8px;">Explainable AI</div>'
-        '<div style="color:rgba(248,242,235,0.45);font-size:14px;line-height:1.6;">Understand exactly why the model predicts a price - every factor is transparent.</div></div>',
+        '<div style="width:56px;height:56px;margin:0 auto 16px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:16px;display:flex;align-items:center;justify-content:center;">'
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D7A24E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>'
+        '<div style="color:#F7F3ED;font-weight:700;font-size:16px;margin-bottom:8px;">Explainable AI</div>'
+        '<div style="color:#A49C94;font-size:14px;line-height:1.6;">See exactly why the model predicts any price with full transparency.</div></div>',
         unsafe_allow_html=True,
     )
 with f3:
     st.markdown(
         '<div class="premium-card" style="text-align:center;">'
-        '<div style="font-size:36px;margin-bottom:12px;">trending_up</div>'
-        '<div style="color:#FAF2EB;font-weight:700;font-size:16px;margin-bottom:8px;">Feature Importance</div>'
-        '<div style="color:rgba(248,242,235,0.45);font-size:14px;line-height:1.6;">Visual breakdown of which characteristics contribute most to the estimated value.</div></div>',
+        '<div style="width:56px;height:56px;margin:0 auto 16px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:16px;display:flex;align-items:center;justify-content:center;">'
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D7A24E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>'
+        '<div style="color:#F7F3ED;font-weight:700;font-size:16px;margin-bottom:8px;">Feature Importance</div>'
+        '<div style="color:#A49C94;font-size:14px;line-height:1.6;">Visual breakdowns of which factors contribute most to value.</div></div>',
         unsafe_allow_html=True,
     )
 with f4:
     st.markdown(
         '<div class="premium-card" style="text-align:center;">'
-        '<div style="font-size:36px;margin-bottom:12px;">account_balance</div>'
-        '<div style="color:#FAF2EB;font-weight:700;font-size:16px;margin-bottom:8px;">Market Insights</div>'
-        '<div style="color:rgba(248,242,235,0.45);font-size:14px;line-height:1.6;">Compare your property against market tiers with visual analytics.</div></div>',
+        '<div style="width:56px;height:56px;margin:0 auto 16px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:16px;display:flex;align-items:center;justify-content:center;">'
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D7A24E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg></div>'
+        '<div style="color:#F7F3ED;font-weight:700;font-size:16px;margin-bottom:8px;">Market Insights</div>'
+        '<div style="color:#A49C94;font-size:14px;line-height:1.6;">Neighborhood and market tier comparisons at a glance.</div></div>',
         unsafe_allow_html=True,
     )
 
 # ============================================================
 # PREDICTION FORM
 # ============================================================
-st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+st.markdown(
+    '<div style="max-width:1450px;margin:110px auto 80px;display:flex;align-items:center;justify-content:center;gap:24px;">'
+    '<div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.18));"></div>'
+    '<span style="color:#A49C94;font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;">Trusted by Machine Learning</span>'
+    '<div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(215,162,78,0.18),transparent);"></div>'
+    '</div>',
+    unsafe_allow_html=True,
+)
 
 st.markdown('<div id="predict"></div>', unsafe_allow_html=True)
 st.markdown(
-    '<div style="padding:0 60px;"><span style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(212,168,78,0.08);border:1px solid rgba(212,168,78,0.18);border-radius:100px;color:#D4A84E;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Valuation Engine</span></div>',
+    '<div style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(215,162,78,0.08);border:1px solid rgba(215,162,78,0.18);border-radius:100px;color:#D7A24E;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Valuation Engine</span></div>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<h2 style="font-family:Playfair Display,serif;font-size:clamp(30px,4vw,48px);color:#FAF2EB;font-weight:700;padding:0 60px;letter-spacing:-1px;">Predict House Price</h2>',
+    '<h2 style="font-family:Playfair Display,serif;font-size:42px;color:#F7F3ED;font-weight:700;text-align:center;letter-spacing:-1px;">Predict House Price</h2>',
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<p style="font-size:17px;color:rgba(248,242,235,0.45);padding:0 60px;">Enter the property details below to generate an AI-powered valuation.</p>',
+    '<p style="font-size:18px;color:#A49C94;text-align:center;max-width:520px;margin:0 auto 40px;">Enter the property details below to generate an AI-powered valuation.</p>',
     unsafe_allow_html=True,
 )
 
@@ -364,21 +679,36 @@ predict_clicked = st.button("Generate Valuation", width="stretch")
 if predict_clicked:
     loading_placeholder = st.empty()
     timeline_steps = [
-        ("Initializing AI Engine", 0.15),
-        ("Processing Property Features", 0.30),
-        ("Running Market Analysis", 0.50),
-        ("Computing Valuation", 0.75),
-        ("Generating Insights", 0.90),
-        ("Finalizing Report", 1.0),
+        ("Analyzing Property", 0.25),
+        ("Evaluating Market", 0.50),
+        ("Generating Valuation Report", 0.75),
+        ("Finalizing Insights", 1.0),
     ]
     completed_steps = []
     progress_bar = st.progress(0)
     status_text = loading_placeholder.empty()
+
+    # Premium loading animation
     for step_label, progress in timeline_steps:
         completed_steps.append(step_label)
-        status_text.info(f"**{step_label}**")
+        status_text.markdown(
+            f'<div style="text-align:center;padding:20px;">'
+            f'<div style="color:#D7A24E;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">{step_label}</div>'
+            f'<div style="color:#A49C94;font-size:13px;">Please wait while we process your property data</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
         progress_bar.progress(progress)
-        time.sleep(0.12)
+        time.sleep(0.6)  # 0.6s x 4 steps = 2.4s total
+
+    # Complete animation
+    status_text.markdown(
+        '<div style="text-align:center;padding:20px;">'
+        '<div style="color:#4CAF50;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;">✓ Analysis Complete</div>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+    time.sleep(0.3)
     progress_bar.empty()
     status_text.empty()
     loading_placeholder.empty()
@@ -457,7 +787,7 @@ if predict_clicked:
     profile = generate_property_profile(inputs, prediction)
 
     # ── PROPERTY PROFILE ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
 
     col_info, col_img = st.columns([3, 2])
     with col_info:
@@ -478,28 +808,54 @@ if predict_clicked:
             st.info("Property Visualization")
 
     # PROPERTY FACTS
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
-    st.caption("Details")
-    st.subheader("Property Facts")
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="margin-bottom:32px;">'
+        '<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Details</div>'
+        '<h2 style="font-family:Playfair Display,serif;font-size:34px;color:#F2C56A;font-weight:700;letter-spacing:-0.5px;margin:0;">Property Facts</h2>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
-    facts = [
-        ("House Style", profile["label"].replace(" Residence", "").replace(" Home", "").replace(" Property", "")),
-        ("Bedrooms", str(inputs.get("BedroomAbvGr", 3))),
-        ("Bathrooms", str(inputs.get("FullBath", 2))),
-        ("Garage", f"{inputs.get('GarageCars', 2)} Car{'s' if inputs.get('GarageCars', 2) != 1 else ''}"),
-        ("Living Area", f"{inputs.get('GrLivArea', 1500):,} sq.ft"),
-        ("Year Built", str(inputs.get("YearBuilt", 2005))),
-        ("Overall Quality", f"{inputs.get('OverallQual', 5)}/10"),
-        ("Neighborhood", NEIGHBORHOOD_LABELS.get(inputs.get("Neighborhood", ""), inputs.get("Neighborhood", ""))),
-        ("Est. Value", f"${prediction:,.0f}"),
-    ]
-    fact_cols = st.columns(3)
-    for i, (label, value) in enumerate(facts):
-        with fact_cols[i % 3]:
-            st.metric(label=label, value=value)
+    fact_bedrooms = str(inputs.get("BedroomAbvGr", 3))
+    fact_bathrooms = str(inputs.get("FullBath", 2))
+    fact_garage = f"{inputs.get('GarageCars', 2)} Car{'s' if inputs.get('GarageCars', 2) != 1 else ''}"
+    fact_year_built = str(inputs.get("YearBuilt", 2005))
+    fact_living_area = f"{inputs.get('GrLivArea', 1500):,} sq.ft"
+    fact_neighborhood = NEIGHBORHOOD_LABELS.get(inputs.get("Neighborhood", ""), inputs.get("Neighborhood", ""))
+
+    facts_html = f"""
+    <div class="facts-grid">
+      <div class="fact-item">
+        <span class="fact-label">Bedrooms</span>
+        <span class="fact-value">{fact_bedrooms}</span>
+      </div>
+      <div class="fact-item">
+        <span class="fact-label">Bathrooms</span>
+        <span class="fact-value">{fact_bathrooms}</span>
+      </div>
+      <div class="fact-item">
+        <span class="fact-label">Garage</span>
+        <span class="fact-value">{fact_garage}</span>
+      </div>
+      <div class="fact-item">
+        <span class="fact-label">Year Built</span>
+        <span class="fact-value">{fact_year_built}</span>
+      </div>
+      <div class="fact-item">
+        <span class="fact-label">Living Area</span>
+        <span class="fact-value">{fact_living_area}</span>
+      </div>
+      <div class="fact-item">
+        <span class="fact-label">Neighborhood</span>
+        <span class="fact-value">{fact_neighborhood}</span>
+      </div>
+    </div>
+    """
+    st.markdown(facts_html, unsafe_allow_html=True)
 
     # MARKET SEGMENT
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Positioning")
     st.subheader("Market Segment")
     st.progress(profile["segment_pct"] / 100)
@@ -507,32 +863,32 @@ if predict_clicked:
 
     # PROPERTY HIGHLIGHTS
     if profile["highlights"]:
-        st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
         st.caption("Strengths")
         st.subheader("Property Highlights")
         for h in profile["highlights"]:
             st.markdown(
-                f'<div class="premium-card" style="margin-bottom:12px;border-left:3px solid #4ECB8D;">'
-                f'<strong style="color:#FAF2EB;">{h["icon"]} {h["title"]}</strong><br>'
-                f'<span style="color:rgba(248,242,235,0.55);font-size:14px;">{h["detail"]}</span></div>',
+                f'<div class="highlight-card">'
+                f'<div class="highlight-card-title">{h["icon"]} {h["title"]}</div>'
+                f'<div class="highlight-card-desc">{h["detail"]}</div></div>',
                 unsafe_allow_html=True,
             )
 
     # DRAWBACKS
     if profile["drawbacks"]:
-        st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
         st.caption("Considerations")
         st.subheader("Potential Drawbacks")
         for d in profile["drawbacks"]:
             st.markdown(
-                f'<div class="premium-card" style="margin-bottom:12px;border-left:3px solid #FFD060;">'
-                f'<strong style="color:#FAF2EB;">{d["icon"]} {d["title"]}</strong><br>'
-                f'<span style="color:rgba(248,242,235,0.55);font-size:14px;">{d["detail"]}</span></div>',
+                f'<div class="premium-card" style="margin-bottom:8px;border-left:3px solid #FFD060;">'
+                f'<strong style="color:#F7F3ED;">{d["icon"]} {d["title"]}</strong><br>'
+                f'<span style="color:#D5D1CC;font-size:14px;">{d["detail"]}</span></div>',
                 unsafe_allow_html=True,
             )
 
     # PROFILE VERDICT
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     rec_class = "excellent" if profile["score"] >= 8 else "good" if profile["score"] >= 6 else "fair"
     if profile["score"] >= 8:
         segment_desc = "Its excellent construction quality, generous living area and modern features position it well above the dataset average."
@@ -545,20 +901,20 @@ if predict_clicked:
     st.subheader("HomeSense AI Verdict")
     st.markdown(
         f'<div class="premium-card" style="text-align:center;">'
-        f'<div style="font-family:Playfair Display,serif;font-size:56px;color:#D4A84E;font-weight:700;">{profile["score"]:.1f}</div>'
-        f'<div style="color:rgba(248,242,235,0.4);font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Overall Score</div>'
+        f'<div style="font-family:Playfair Display,serif;font-size:56px;color:#D7A24E;font-weight:700;">{profile["score"]:.1f}</div>'
+        f'<div style="color:rgba(248,245,240,0.4);font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px;">Overall Score</div>'
         f'<div style="display:inline-block;padding:8px 24px;border-radius:100px;font-size:14px;font-weight:700;margin-bottom:20px;'
-        f'{"background:rgba(78,203,141,0.1);border:1px solid rgba(78,203,141,0.25);color:#4ECB8D;" if rec_class == "excellent" else "background:rgba(212,168,78,0.1);border:1px solid rgba(212,168,78,0.25);color:#D4A84E;" if rec_class == "good" else "background:rgba(255,208,96,0.1);border:1px solid rgba(255,208,96,0.25);color:#FFD060;"}'
+        f'{"background:rgba(102,209,122,0.1);border:1px solid rgba(102,209,122,0.25);color:#4CAF50;" if rec_class == "excellent" else "background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.25);color:#D7A24E;" if rec_class == "good" else "background:rgba(255,208,96,0.1);border:1px solid rgba(255,208,96,0.25);color:#FFD060;"}'
         f'">{profile["recommendation"]}</div>'
-        f'<div style="color:rgba(248,242,235,0.55);line-height:1.8;max-width:600px;margin:0 auto;">'
+        f'<div style="color:#D5D1CC;line-height:1.8;max-width:600px;margin:0 auto;">'
         f'This property belongs to the <strong>{profile["market_segment"]}</strong> market segment. {segment_desc}</div></div>',
         unsafe_allow_html=True,
     )
 
     # ── VALUATION CARD ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     confidence = confidence_data["score"]
-    confidence_color = "#4ECB8D" if confidence >= 85 else "#D4A84E" if confidence >= 70 else "#FFD060"
+    confidence_color = "#4CAF50" if confidence >= 85 else "#D7A24E" if confidence >= 70 else "#FFD060"
     verdict = generate_ai_verdict(inputs, prediction, scores, market)
     value_drivers = generate_value_drivers(inputs, prediction)
     investment_interp = generate_investment_interpretation(inputs, prediction, scores, market)
@@ -568,99 +924,122 @@ if predict_clicked:
     st.markdown(
         f'<div class="premium-card" style="text-align:center;">'
         f'<span style="display:inline-block;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;'
-        f'{"background:rgba(78,203,141,0.1);border:1px solid rgba(78,203,141,0.25);color:#4ECB8D;" if badge_class == "premium" else "background:rgba(212,168,78,0.1);border:1px solid rgba(212,168,78,0.25);color:#D4A84E;"}'
+        f'{"background:rgba(102,209,122,0.1);border:1px solid rgba(102,209,122,0.25);color:#4CAF50;" if badge_class == "premium" else "background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.25);color:#D7A24E;"}'
         f'">{badge_text}</span><br><br>'
-        f'<div style="font-family:Playfair Display,serif;font-size:clamp(40px,5vw,64px);color:#D4A84E;font-weight:700;">${prediction:,.0f}</div>'
-        f'<div style="color:rgba(248,242,235,0.45);font-size:15px;margin-bottom:20px;">Estimated Market Value</div>'
-        f'<div style="color:rgba(248,242,235,0.35);font-size:13px;">Likely Range: ${pred_interval["lower"]:,.0f} - ${pred_interval["upper"]:,.0f} (95% CI)</div>'
-        f'<div style="margin-top:12px;"><span style="color:rgba(248,242,235,0.45);font-size:13px;">Confidence: </span>'
+        f'<div style="font-family:Playfair Display,serif;font-size:clamp(40px,5vw,64px);color:#D7A24E;font-weight:700;">${prediction:,.0f}</div>'
+        f'<div style="color:#A49C94;font-size:15px;margin-bottom:20px;">Estimated Market Value</div>'
+        f'<div style="color:rgba(248,245,240,0.35);font-size:13px;">Likely Range: ${pred_interval["lower"]:,.0f} - ${pred_interval["upper"]:,.0f} (95% CI)</div>'
+        f'<div style="margin-top:12px;"><span style="color:#A49C94;font-size:13px;">Confidence: </span>'
         f'<span style="color:{confidence_color};font-weight:700;">{confidence}%</span> '
-        f'<span style="color:rgba(248,242,235,0.35);font-size:12px;">{confidence_data["grade"]} Confidence</span></div></div>',
+        f'<span style="color:rgba(248,245,240,0.35);font-size:12px;">{confidence_data["grade"]} Confidence</span></div></div>',
         unsafe_allow_html=True,
     )
 
     # ── AI VERDICT ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Verdict")
     st.subheader("AI Valuation Verdict")
     st.markdown(
-        f'<div class="premium-card" style="border-left:4px solid {verdict["color"]};">'
+        f'<div class="premium-card" style="border-left:3px solid {verdict["color"]};">'
         f'<div style="display:inline-block;padding:6px 18px;border-radius:100px;font-size:13px;font-weight:700;border:1px solid {verdict["color"]};color:{verdict["color"]};margin-bottom:16px;">{verdict["verdict"]}</div>'
-        f'<div style="color:rgba(248,242,235,0.65);line-height:1.7;margin-bottom:12px;">{verdict["reasoning"]}</div>'
+        f'<div style="color:rgba(248,245,240,0.65);line-height:1.7;margin-bottom:12px;">{verdict["reasoning"]}</div>'
         f'<div style="color:{verdict["color"]};font-weight:600;">{verdict["action"]}</div></div>',
         unsafe_allow_html=True,
     )
 
     # ── WHAT DRIVES THIS PRICE ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Value Assessment")
     st.subheader("What Drives This Price")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">Key factors that determine the estimated value of this property.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#A49C94;">Key factors that determine the estimated value of this property.</p>', unsafe_allow_html=True)
     for d in value_drivers:
         st.markdown(
-            f'<div class="premium-card" style="margin-bottom:12px;">'
-            f'<strong style="color:#FAF2EB;">{d["icon"]} {d["title"]}</strong><br>'
-            f'<span style="color:rgba(248,242,235,0.55);font-size:14px;">{d["detail"]}</span></div>',
+            f'<div class="drive-row">'
+            f'<span class="drive-factor">{d["icon"]} {d["title"]}</span>'
+            f'<span class="drive-contrib">High</span>'
+            f'<span class="drive-impact" style="color:#4CAF50;">+</span></div>',
             unsafe_allow_html=True,
         )
 
     # ── INVESTMENT INTERPRETATION ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Analyst Perspective")
     st.subheader("If This Were My Investment")
     st.markdown(
-        f'<div class="premium-card" style="border-left:3px solid #D4A84E;">'
-        f'<p style="color:rgba(248,242,235,0.65);line-height:1.8;font-style:italic;">{investment_interp}</p></div>',
+        f'<div class="premium-card" style="border-left:3px solid #D7A24E;">'
+        f'<p style="color:rgba(248,245,240,0.65);line-height:1.8;font-style:italic;">{investment_interp}</p></div>',
         unsafe_allow_html=True,
     )
 
     # ── PROPERTY ASSESSMENT ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
-    st.caption("Assessment")
-    st.subheader("Property Assessment")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">Areas where this property excels and where it falls short.</p>', unsafe_allow_html=True)
-
-    sw_left, sw_right = st.columns(2)
-    with sw_left:
-        st.markdown("**Strengths**")
-        for s in strengths_weaknesses["strengths"]:
-            st.markdown(
-                f'<div class="premium-card" style="margin-bottom:8px;border-left:3px solid #4ECB8D;padding:14px 18px;">'
-                f'<strong style="color:#4ECB8D;">check {s["feature"]}</strong><br>'
-                f'<span style="color:#D4A84E;font-weight:600;">{s["value"]}</span><br>'
-                f'<span style="color:rgba(248,242,235,0.45);font-size:13px;">{s["detail"]}</span></div>',
-                unsafe_allow_html=True,
-            )
-        if not strengths_weaknesses["strengths"]:
-            st.info("No standout strengths detected.")
-    with sw_right:
-        st.markdown("**Weaknesses**")
-        for w in strengths_weaknesses["weaknesses"]:
-            st.markdown(
-                f'<div class="premium-card" style="margin-bottom:8px;border-left:3px solid #FF6B6B;padding:14px 18px;">'
-                f'<strong style="color:#FF6B6B;">close {w["feature"]}</strong><br>'
-                f'<span style="color:#D4A84E;font-weight:600;">{w["value"]}</span><br>'
-                f'<span style="color:rgba(248,242,235,0.45);font-size:13px;">{w["detail"]}</span></div>',
-                unsafe_allow_html=True,
-            )
-        if not strengths_weaknesses["weaknesses"]:
-            st.info("No significant weaknesses detected.")
-
-    # ── EXECUTIVE SUMMARY ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
-    st.caption("Summary")
-    st.subheader("Executive Summary")
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.markdown(
-        f'<div class="premium-card" style="border-left:3px solid #D4A84E;">'
-        f'<p style="color:rgba(248,242,235,0.65);line-height:1.8;">{ai_summary}</p></div>',
+        '<div style="margin-bottom:32px;">'
+        '<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Assessment</div>'
+        '<h2 style="font-family:Playfair Display,serif;font-size:34px;color:#F2C56A;font-weight:700;letter-spacing:-0.5px;margin:0;">Property Assessment</h2>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    overall_label = get_score_label(scores["investment"])
+    condition_label = get_score_label(scores["resale"])
+    luxury_label = get_score_label(scores["luxury"])
+    investment_label = get_score_label(scores["investment"])
+    st.markdown(
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">'
+        f'<div class="assess-card"><div class="assess-label">Overall</div><div class="assess-value">{overall_label}</div></div>'
+        f'<div class="assess-card"><div class="assess-label">Condition</div><div class="assess-value">{condition_label}</div></div>'
+        f'<div class="assess-card"><div class="assess-label">Luxury</div><div class="assess-value">{luxury_label}</div></div>'
+        f'<div class="assess-card"><div class="assess-label">Investment</div><div class="assess-value">{investment_label}</div></div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
+    # ── EXECUTIVE SUMMARY ──
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="margin-bottom:32px;">'
+        '<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Summary</div>'
+        '<h2 style="font-family:Playfair Display,serif;font-size:34px;color:#F2C56A;font-weight:700;letter-spacing:-0.5px;margin:0;">Executive Summary</h2>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    summary_parts = ai_summary.split("Key Drivers")
+    summary_html = (
+        f'<div class="premium-card" style="border-left:3px solid #D7A24E;">'
+        f'<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">Overall Assessment</div>'
+        f'<p style="color:#D5D1CC;line-height:1.8;">{summary_parts[0].strip()}</p>'
+    )
+    if len(summary_parts) > 1:
+        summary_html += (
+            f'<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin:24px 0 12px;">Key Drivers</div>'
+            f'<p style="color:#D5D1CC;line-height:1.8;">{summary_parts[1].strip()}</p>'
+        )
+    summary_html += '</div>'
+    st.markdown(summary_html, unsafe_allow_html=True)
+
     # ── INVESTMENT SCORES ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
-    st.caption("Investment Analysis")
-    st.subheader("Investment Scores")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">Quantified assessment based on property characteristics and market position.</p>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="margin-bottom:32px;">'
+        '<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Investment Analysis</div>'
+        '<h2 style="font-family:Playfair Display,serif;font-size:34px;color:#F2C56A;font-weight:700;letter-spacing:-0.5px;margin:0;">Investment Scores</h2>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<p style="color:#A49C94;">Quantified assessment based on property characteristics and market position.</p>', unsafe_allow_html=True)
+
+    invest_score = scores["investment"]
+    invest_stars_full = invest_score // 20
+    invest_stars_half = 1 if (invest_score % 20) >= 10 else 0
+    invest_stars_empty = 5 - invest_stars_full - invest_stars_half
+    stars_html = "★" * invest_stars_full + ("½" if invest_stars_half else "") + "☆" * invest_stars_empty
+    st.markdown(
+        f'<div class="premium-card" style="text-align:center;margin-bottom:16px;">'
+        f'<div class="invest-rating">{invest_score}/100</div>'
+        f'<div class="invest-stars">{stars_html}</div>'
+        f'<div style="color:#A49C94;font-size:14px;margin-top:8px;">{get_score_label(invest_score)}</div></div>',
+        unsafe_allow_html=True,
+    )
 
     score_items = [("Investment Score", "investment"), ("Rental Potential", "rental"), ("Resale Value", "resale"), ("Luxury Score", "luxury"), ("Market Safety", "risk")]
     score_cols = st.columns(len(score_items))
@@ -673,50 +1052,58 @@ if predict_clicked:
             st.markdown(f'<span style="color:{color};font-weight:600;">{get_score_label(val)}</span>', unsafe_allow_html=True)
 
     # ── PROPERTY REPORT CARD ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Scorecard")
     st.subheader("Property Report Card")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">Comprehensive scoring across 7 key categories.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#A49C94;">Comprehensive scoring across 7 key categories.</p>', unsafe_allow_html=True)
 
-    total_score = sum(sc["score"] for sc in scorecard)
-    max_total = sum(sc["max"] for sc in scorecard)
+    filtered_scorecard = [sc for sc in scorecard if sc["category"] != "Quality"]
+    total_score = sum(sc["score"] for sc in filtered_scorecard)
+    max_total = sum(sc["max"] for sc in filtered_scorecard)
     overall_grade = "A" if total_score >= max_total * 0.8 else "B" if total_score >= max_total * 0.65 else "C" if total_score >= max_total * 0.5 else "D"
 
     st.markdown(
         f'<div class="premium-card" style="text-align:center;margin-bottom:20px;">'
-        f'<div style="font-family:Playfair Display,serif;font-size:48px;color:#D4A84E;font-weight:700;">{overall_grade}</div>'
-        f'<div style="color:rgba(248,242,235,0.4);font-size:14px;">{total_score}/{max_total} Overall</div></div>',
+        f'<div style="font-family:Playfair Display,serif;font-size:48px;color:#D7A24E;font-weight:700;">{overall_grade}</div>'
+        f'<div style="color:rgba(248,245,240,0.4);font-size:14px;">{total_score}/{max_total} Overall</div></div>',
         unsafe_allow_html=True,
     )
-    for sc in scorecard:
-        sc_color = "#4ECB8D" if sc["score"] >= 8 else "#D4A84E" if sc["score"] >= 6 else "#FFD060" if sc["score"] >= 4 else "#FF6B6B"
+    for sc in filtered_scorecard:
+        sc_color = "#4CAF50" if sc["score"] >= 8 else "#D7A24E" if sc["score"] >= 6 else "#FFD060" if sc["score"] >= 4 else "#E57373"
         st.markdown(
-            f'<div class="premium-card" style="margin-bottom:8px;padding:14px 20px;">'
+            f'<div class="premium-card" style="margin-bottom:8px;padding:14px 18px;">'
             f'<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
-            f'<span style="color:#FAF2EB;font-weight:600;">{sc["category"]}</span>'
+            f'<span style="color:#F7F3ED;font-weight:600;">{sc["category"]}</span>'
             f'<span style="color:{sc_color};font-weight:700;">{sc["score"]}/{sc["max"]}</span></div>'
             f'<div style="height:6px;background:rgba(255,255,255,0.04);border-radius:6px;overflow:hidden;margin-bottom:6px;">'
             f'<div style="height:100%;width:{sc["score"]/sc["max"]*100}%;background:{sc_color};border-radius:6px;"></div></div>'
-            f'<div style="color:rgba(248,242,235,0.4);font-size:13px;">{sc["detail"]}</div></div>',
+            f'<div style="color:rgba(248,245,240,0.4);font-size:13px;">{sc["detail"]}</div></div>',
             unsafe_allow_html=True,
         )
 
     # ── MARKET POSITION ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     pos = market["percentile"]
-    tier_colors = {"Entry-Level": "#FF6B6B", "Value": "#FFD060", "Average": "#D4A84E", "Above Average": "#4ECB8D", "Premium": "#4ECB8D", "Luxury": "#D4A84E"}
-    tier_color = tier_colors.get(market["tier"], "#D4A84E")
+    tier_colors = {"Entry-Level": "#E57373", "Value": "#FFD060", "Average": "#D7A24E", "Above Average": "#4CAF50", "Premium": "#4CAF50", "Luxury": "#D7A24E"}
+    tier_color = tier_colors.get(market["tier"], "#D7A24E")
     vs_avg_sign = "+" if market["vs_avg"] >= 0 else ""
+    vs_avg_color = "#4CAF50" if market["vs_avg"] >= 0 else "#E57373"
+    vs_avg_arrow = "▲" if market["vs_avg"] >= 0 else "▼"
 
-    st.caption("Market Analysis")
-    st.subheader("Market Position")
+    st.markdown(
+        '<div style="margin-bottom:32px;">'
+        '<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Market Analysis</div>'
+        '<h2 style="font-family:Playfair Display,serif;font-size:34px;color:#F2C56A;font-weight:700;letter-spacing:-0.5px;margin:0;">Market Position</h2>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown(
         f'<div class="premium-card">'
         f'<div style="display:inline-block;padding:8px 20px;border-radius:100px;font-size:14px;font-weight:700;border:1px solid {tier_color};color:{tier_color};margin-bottom:12px;">{market["tier"]}</div>'
-        f'<div style="color:rgba(248,242,235,0.55);margin-bottom:16px;">{market["tier_desc"]}</div>'
+        f'<div style="color:#D5D1CC;margin-bottom:16px;">{market["tier_desc"]}</div>'
         f'<div style="height:8px;background:rgba(255,255,255,0.04);border-radius:8px;position:relative;margin:16px 0;">'
-        f'<div style="height:100%;width:{pos}%;background:linear-gradient(90deg,rgba(212,168,78,0.3),rgba(212,168,78,0.7));border-radius:8px;"></div></div>'
-        f'<div style="display:flex;justify-content:space-between;color:rgba(248,242,235,0.35);font-size:12px;margin-bottom:16px;">'
+        f'<div style="height:100%;width:{pos}%;background:linear-gradient(90deg,rgba(215,162,78,0.3),rgba(215,162,78,0.7));border-radius:8px;"></div></div>'
+        f'<div style="display:flex;justify-content:space-between;color:rgba(248,245,240,0.35);font-size:12px;margin-bottom:16px;">'
         f'<span>Budget</span><span>Average</span><span>Premium</span><span>Luxury</span></div></div>',
         unsafe_allow_html=True,
     )
@@ -724,32 +1111,49 @@ if predict_clicked:
     with mp1:
         st.metric(label="Percentile", value=f"{pos}th")
     with mp2:
-        st.metric(label="vs Dataset Average", value=f"{vs_avg_sign}${market['vs_avg']:,.0f}")
+        st.markdown(
+            f'<div style="background:rgba(38,26,20,0.65);border:1px solid rgba(215,162,78,0.15);border-radius:14px;padding:20px 24px;text-align:center;">'
+            f'<div style="color:#A49C94;font-size:15px;margin-bottom:8px;">vs Average</div>'
+            f'<div style="color:{vs_avg_color};font-size:28px;font-weight:700;">{vs_avg_arrow} {vs_avg_sign}${market["vs_avg"]:,.0f}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
     with mp3:
-        st.metric(label="vs Average %", value=f"{vs_avg_sign}{market['vs_avg_pct']:.1f}%")
+        st.markdown(
+            f'<div style="background:rgba(38,26,20,0.65);border:1px solid rgba(215,162,78,0.15);border-radius:14px;padding:20px 24px;text-align:center;">'
+            f'<div style="color:#A49C94;font-size:15px;margin-bottom:8px;">vs Average %</div>'
+            f'<div style="color:{vs_avg_color};font-size:28px;font-weight:700;">{vs_avg_arrow} {vs_avg_sign}{market["vs_avg_pct"]:.1f}%</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
     # ── TOP VALUATION FACTORS ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     insights = generate_explanations(inputs, prediction)
-    st.caption("Key Drivers")
-    st.subheader("Top Valuation Factors")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">The most influential characteristics affecting this property estimated value.</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="margin-bottom:32px;">'
+        '<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Key Drivers</div>'
+        '<h2 style="font-family:Playfair Display,serif;font-size:34px;color:#F2C56A;font-weight:700;letter-spacing:-0.5px;margin:0;">Top Valuation Factors</h2>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<p style="color:#A49C94;">The most influential characteristics affecting this property estimated value.</p>', unsafe_allow_html=True)
     for insight in insights:
-        ic = "#4ECB8D" if insight["type"] == "positive" else "#FF6B6B" if insight["type"] == "negative" else "#FFD060"
+        ic = "#4CAF50" if insight["type"] == "positive" else "#E57373" if insight["type"] == "negative" else "#FFD060"
         st.markdown(
-            f'<div class="premium-card" style="margin-bottom:12px;border-left:3px solid {ic};">'
-            f'<strong style="color:#FAF2EB;">{insight["icon"]} {insight["title"]}</strong><br>'
-            f'<span style="color:rgba(248,242,235,0.55);font-size:14px;">{insight["description"]}</span><br>'
+            f'<div class="premium-card" style="margin-bottom:8px;border-left:3px solid {ic};">'
+            f'<strong style="color:#F7F3ED;">{insight["icon"]} {insight["title"]}</strong><br>'
+            f'<span style="color:#D5D1CC;font-size:14px;">{insight["description"]}</span><br>'
             f'<span style="color:{ic};font-size:13px;font-weight:600;">{insight.get("contribution", "")}</span></div>',
             unsafe_allow_html=True,
         )
 
     # ── VISUAL INSIGHTS ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.markdown('<div id="analytics"></div>', unsafe_allow_html=True)
     st.caption("Analytics")
     st.subheader("Visual Insights")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">Interactive charts to understand the valuation from every angle.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#A49C94;">Interactive charts to understand the valuation from every angle.</p>', unsafe_allow_html=True)
 
     chart_col1, chart_col2 = st.columns(2)
     with chart_col1:
@@ -759,42 +1163,42 @@ if predict_clicked:
         st.plotly_chart(create_input_summary_chart(inputs), width="stretch", config={"displayModeBar": False})
 
     # ── RECOMMENDATIONS ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Recommendations")
     st.subheader("Recommendations")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">Targeted improvements to increase property value and marketability.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#A49C94;">Targeted improvements to increase property value and marketability.</p>', unsafe_allow_html=True)
     for rec in recs:
         st.markdown(
-            f'<div class="premium-card" style="margin-bottom:12px;">'
-            f'<strong style="color:#FAF2EB;">{rec["icon"]} {rec["title"]}</strong><br>'
-            f'<span style="color:rgba(248,242,235,0.55);font-size:14px;">{rec["description"]}</span><br>'
-            f'<span style="color:#D4A84E;font-size:13px;font-weight:600;">{rec["impact"]}</span></div>',
+            f'<div class="premium-card" style="margin-bottom:8px;">'
+            f'<strong style="color:#F7F3ED;">{rec["icon"]} {rec["title"]}</strong><br>'
+            f'<span style="color:#D5D1CC;font-size:14px;">{rec["description"]}</span><br>'
+            f'<span style="color:#D7A24E;font-size:13px;font-weight:600;">{rec["impact"]}</span></div>',
             unsafe_allow_html=True,
         )
 
     # ── SMART IMPROVEMENT SIMULATOR ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Improvements")
     st.subheader("Smart Improvement Simulator")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">Potential improvements with estimated costs and value impact.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#A49C94;">Potential improvements with estimated costs and value impact.</p>', unsafe_allow_html=True)
     for imp in improvements:
-        roi_color = "#4ECB8D" if imp["roi"] >= 100 else "#D4A84E" if imp["roi"] >= 50 else "#FFD060"
+        roi_color = "#4CAF50" if imp["roi"] >= 100 else "#D7A24E" if imp["roi"] >= 50 else "#FFD060"
         cost_text = f"${imp['cost_low']:,.0f} - ${imp['cost_high']:,.0f}" if imp["cost_low"] > 0 else "N/A"
         value_text = f"+${imp['est_value']:,.0f}" if imp["est_value"] > 0 else "N/A"
         st.markdown(
-            f'<div class="premium-card" style="margin-bottom:12px;">'
+            f'<div class="premium-card" style="margin-bottom:8px;">'
             f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-            f'<strong style="color:#FAF2EB;">{imp["feature"]}</strong>'
+            f'<strong style="color:#F7F3ED;">{imp["feature"]}</strong>'
             f'<span style="color:{roi_color};font-weight:700;">{imp["roi"]}% ROI</span></div>'
-            f'<div style="color:rgba(248,242,235,0.55);font-size:14px;margin-bottom:8px;">{imp["description"]}</div>'
+            f'<div style="color:#D5D1CC;font-size:14px;margin-bottom:8px;">{imp["description"]}</div>'
             f'<div style="display:flex;gap:24px;">'
-            f'<div><span style="color:rgba(248,242,235,0.4);font-size:12px;">Est. Cost</span><br><span style="color:#FAF2EB;font-weight:600;">{cost_text}</span></div>'
-            f'<div><span style="color:rgba(248,242,235,0.4);font-size:12px;">Est. Value Add</span><br><span style="color:#4ECB8D;font-weight:600;">{value_text}</span></div></div></div>',
+            f'<div><span style="color:rgba(248,245,240,0.4);font-size:12px;">Est. Cost</span><br><span style="color:#F7F3ED;font-weight:600;">{cost_text}</span></div>'
+            f'<div><span style="color:rgba(248,245,240,0.4);font-size:12px;">Est. Value Add</span><br><span style="color:#4CAF50;font-weight:600;">{value_text}</span></div></div></div>',
             unsafe_allow_html=True,
         )
 
     # ── NEIGHBORHOOD INSIGHTS ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     nb = nb_insights
     st.caption("Location Intelligence")
     st.subheader("Neighborhood Insights")
@@ -803,8 +1207,8 @@ if predict_clicked:
         st.markdown(
             f'<div class="premium-card">'
             f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
-            f'<strong style="color:#FAF2EB;font-size:18px;">{nb["name"]}</strong>'
-            f'<span style="padding:4px 14px;border-radius:100px;font-size:12px;font-weight:600;background:rgba(212,168,78,0.1);border:1px solid rgba(212,168,78,0.2);color:#D4A84E;">{nb["tier"]}</span></div></div>',
+            f'<strong style="color:#F7F3ED;font-size:18px;">{nb["name"]}</strong>'
+            f'<span style="padding:4px 14px;border-radius:100px;font-size:12px;font-weight:600;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);color:#D7A24E;">{nb["tier"]}</span></div></div>',
             unsafe_allow_html=True,
         )
     with nb2:
@@ -816,107 +1220,213 @@ if predict_clicked:
             st.metric(label="Typical Buyers", value=nb["buyers"])
             st.metric(label="Price Trend", value=nb["trend"])
 
-    # ── COMPARE AGAINST AVERAGE ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    # ── MARKET BENCHMARK (merged) ──
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Benchmark Analysis")
-    st.subheader("Compare Against Average")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">How this property compares to the training dataset averages.</p>', unsafe_allow_html=True)
+    st.subheader("Market Benchmark")
+    st.markdown('<p style="color:#A49C94;">How your property compares to dataset averages and percentile rankings.</p>', unsafe_allow_html=True)
+
+    # Comparison rows
     for comp in comparison:
-        diff_color = "#4ECB8D" if comp["better"] else "#FF6B6B"
+        diff_color = "#4CAF50" if comp["better"] else "#E57373"
         diff_sign = "+" if comp["difference"] > 0 else ""
         st.markdown(
-            f'<div class="premium-card" style="margin-bottom:8px;padding:14px 20px;">'
+            f'<div class="premium-card" style="margin-bottom:8px;padding:14px 18px;">'
             f'<div style="display:flex;justify-content:space-between;align-items:center;">'
-            f'<span style="color:#FAF2EB;font-weight:600;min-width:120px;">{comp["name"]}</span>'
-            f'<span style="color:#D4A84E;font-weight:700;">{comp["yours"]}{comp["unit"]}</span>'
-            f'<span style="color:rgba(248,242,235,0.3);">vs</span>'
-            f'<span style="color:rgba(248,242,235,0.55);">{comp["average"]}{comp["unit"]}</span>'
+            f'<span style="color:#F7F3ED;font-weight:600;min-width:120px;">{comp["name"]}</span>'
+            f'<span style="color:#D7A24E;font-weight:700;">{comp["yours"]}{comp["unit"]}</span>'
+            f'<span style="color:rgba(248,245,240,0.3);">vs</span>'
+            f'<span style="color:#D5D1CC;">{comp["average"]}{comp["unit"]}</span>'
             f'<span style="color:{diff_color};font-weight:600;">{diff_sign}{comp["difference"]}{comp["unit"]} ({diff_sign}{comp["pct"]}%)</span>'
             f'</div></div>',
             unsafe_allow_html=True,
         )
 
-    # ── BENCHMARK AGAINST DATASET ──
+    # Percentile benchmarks
     if benchmark_percentiles:
-        st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
-        st.caption("Percentile Rankings")
-        st.subheader("Benchmark Against Dataset")
-        st.markdown(f'<p style="color:rgba(248,242,235,0.45);">Where your property ranks among {dataset_insights["total_records"]:,} training records.</p>', unsafe_allow_html=True)
+        st.markdown('<div style="margin:20px 0 12px;"><span style="color:#A49C94;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Percentile Rankings</span></div>', unsafe_allow_html=True)
         for bp in benchmark_percentiles:
-            tier_color_b = "#4ECB8D" if "Top" in bp["tier"] or "Above" in bp["tier"] else "#D4A84E" if bp["tier"] == "Average" else "#FFD060"
+            tier_color_b = "#4CAF50" if "Top" in bp["tier"] or "Above" in bp["tier"] else "#D7A24E" if bp["tier"] == "Average" else "#FFD060"
             st.markdown(
-                f'<div class="premium-card" style="margin-bottom:8px;padding:14px 20px;">'
+                f'<div class="premium-card" style="margin-bottom:8px;padding:14px 18px;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-                f'<span style="color:#FAF2EB;font-weight:600;">{bp["feature"]}</span>'
-                f'<span style="color:#D4A84E;font-weight:600;">{bp["value"]}{bp["unit"]}</span></div>'
+                f'<span style="color:#F7F3ED;font-weight:600;">{bp["feature"]}</span>'
+                f'<span style="color:#D7A24E;font-weight:600;">{bp["value"]}{bp["unit"]}</span></div>'
                 f'<div style="display:flex;align-items:center;gap:12px;">'
                 f'<div style="flex:1;height:6px;background:rgba(255,255,255,0.04);border-radius:6px;overflow:hidden;">'
-                f'<div style="height:100%;width:{bp["percentile"]}%;background:linear-gradient(90deg,rgba(212,168,78,0.3),rgba(212,168,78,0.7));border-radius:6px;"></div></div>'
-                f'<span style="color:rgba(248,242,235,0.4);font-size:13px;min-width:40px;">{bp["percentile"]:.0f}th</span>'
+                f'<div style="height:100%;width:{bp["percentile"]}%;background:linear-gradient(90deg,rgba(215,162,78,0.3),rgba(215,162,78,0.7));border-radius:6px;"></div></div>'
+                f'<span style="color:rgba(248,245,240,0.4);font-size:13px;min-width:40px;">{bp["percentile"]:.0f}th</span>'
                 f'<span style="color:{tier_color_b};font-weight:600;font-size:13px;min-width:80px;">{bp["tier"]}</span></div></div>',
                 unsafe_allow_html=True,
             )
 
     # ── SIMILAR PROPERTIES ──
     if similar_props:
-        st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
-        st.caption("Comparable Analysis")
-        st.subheader("Similar Properties")
-        st.markdown('<p style="color:rgba(248,242,235,0.45);">Properties from the training dataset most similar to yours.</p>', unsafe_allow_html=True)
+        st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div style="margin-bottom:32px;">'
+            '<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Comparable Analysis</div>'
+            '<h2 style="font-family:Playfair Display,serif;font-size:34px;color:#F2C56A;font-weight:700;letter-spacing:-0.5px;margin:0;">Similar Properties</h2>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<p style="color:#A49C94;">Properties from the training dataset most similar to yours.</p>', unsafe_allow_html=True)
+
+        # Load local house images for similar properties
+        HOUSE_DIR = "assets/houses"
+        HOUSE_CATS = ["starter","cottage","ranch","townhouse","suburban","craftsman","colonial","modern","luxury","mansion"]
+
+        def _get_property_category(inputs, prediction):
+            oq = inputs.get("OverallQual", 5)
+            gla = inputs.get("GrLivArea", 1500)
+            gc = inputs.get("GarageCars", 2)
+            yb = inputs.get("YearBuilt", 2005)
+            beds = inputs.get("BedroomAbvGr", 3)
+
+            if oq >= 9 and prediction > 326100 and gla > 3000 and gc >= 3:
+                return "mansion"
+            if oq >= 8 and prediction > 214000 and gla > 2500:
+                return "luxury"
+            if yb >= 2000 and oq >= 7 and gla > 1800:
+                return "modern"
+            if oq >= 6 and yb < 1970 and gla > 1800 and beds >= 4:
+                return "colonial"
+            if oq >= 6 and 1940 <= yb < 1970 and gla > 1500 and beds <= 3:
+                return "craftsman"
+            if oq >= 5 and gla >= 1200 and gc >= 2:
+                return "suburban"
+            if oq >= 5 and yb >= 1970 and gla < 1800 and gla >= 1100 and gc <= 2 and beds <= 3:
+                return "townhouse"
+            if oq >= 5 and yb < 1970 and gla >= 1200 and beds <= 3:
+                return "ranch"
+            if oq <= 5 and gla < 1100:
+                return "starter"
+            if oq <= 5 and gla < 1200:
+                return "cottage"
+            return "suburban"
+
+        def _load_property_images(category, n=3):
+            cat_dir = os.path.join(HOUSE_DIR, category)
+            if not os.path.isdir(cat_dir):
+                # Fallback to any available category
+                for fallback_cat in HOUSE_CATS:
+                    fallback_dir = os.path.join(HOUSE_DIR, fallback_cat)
+                    if os.path.isdir(fallback_dir):
+                        cat_dir = fallback_dir
+                        break
+                else:
+                    return []
+
+            images = [f for f in os.listdir(cat_dir) if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))]
+            if not images:
+                return []
+
+            # Randomly select n different images (no duplicates)
+            selected = random.sample(images, min(n, len(images)))
+
+            result = []
+            for img in selected:
+                img_path = os.path.join(cat_dir, img)
+                try:
+                    with open(img_path, "rb") as f:
+                        b64 = base64.b64encode(f.read()).decode()
+                        result.append(f"data:image/jpeg;base64,{b64}")
+                except Exception:
+                    continue
+            return result
+
+        # Get property category and load images
+        prop_category = _get_property_category(inputs, prediction)
+        property_images = _load_property_images(prop_category, n=3)
+
+        # Category labels for display
+        CATEGORY_LABELS = {
+            "starter": "Starter Home",
+            "cottage": "Charming Cottage",
+            "ranch": "Ranch Residence",
+            "townhouse": "Townhouse",
+            "suburban": "Suburban Family Home",
+            "craftsman": "Craftsman Home",
+            "colonial": "Colonial Estate",
+            "modern": "Modern Family Home",
+            "luxury": "Luxury Villa",
+            "mansion": "Executive Residence"
+        }
+
         sim_cols = st.columns(len(similar_props))
         for i, prop in enumerate(similar_props):
             with sim_cols[i]:
                 price_diff_sign = "+" if prop["price_diff"] >= 0 else ""
-                diff_color_s = "#4ECB8D" if prop["price_diff"] >= 0 else "#FF6B6B"
+                diff_color_s = "#4CAF50" if prop["price_diff"] >= 0 else "#E57373"
+
+                # Use local image (cycle through available images)
+                img_url = property_images[i % len(property_images)] if property_images else ""
+
+                # Get category label
+                cat_label = CATEGORY_LABELS.get(prop_category, "Premium Property")
+
                 st.markdown(
                     f'<div class="premium-card" style="text-align:center;">'
-                    f'<div style="display:flex;justify-content:space-between;margin-bottom:8px;">'
-                    f'<span style="color:rgba(248,242,235,0.4);font-size:13px;">#{prop["rank"]}</span>'
-                    f'<span style="color:#D4A84E;font-size:13px;font-weight:600;">{prop["similarity"]}% match</span></div>'
-                    f'<div style="font-family:Playfair Display,serif;font-size:28px;color:#D4A84E;font-weight:700;margin-bottom:12px;">${prop["sale_price"]:,.0f}</div>'
-                    f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;margin-bottom:12px;">'
-                    f'<div><span style="color:rgba(248,242,235,0.4);font-size:11px;">Quality</span><br><span style="color:#FAF2EB;font-weight:600;">{prop["quality"]}/10</span></div>'
-                    f'<div><span style="color:rgba(248,242,235,0.4);font-size:11px;">Area</span><br><span style="color:#FAF2EB;font-weight:600;">{prop["area"]:,} sqft</span></div>'
-                    f'<div><span style="color:rgba(248,242,235,0.4);font-size:11px;">Garage</span><br><span style="color:#FAF2EB;font-weight:600;">{prop["garage"]} car</span></div>'
-                    f'<div><span style="color:rgba(248,242,235,0.4);font-size:11px;">Year</span><br><span style="color:#FAF2EB;font-weight:600;">{prop["year"]}</span></div></div>'
-                    f'<div style="color:{diff_color_s};font-weight:600;font-size:13px;">{price_diff_sign}${prop["price_diff"]:,.0f} vs your prediction</div></div>',
+                    f'<div style="color:#D7A24E;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">{cat_label}</div>'
+                    f'<div style="font-family:Playfair Display,serif;font-size:32px;color:#D7A24E;font-weight:700;margin-bottom:12px;">${prop["sale_price"]:,.0f}</div>'
+                    f'<div class="sim-img" style="margin:0 auto 16px;"><img src="{img_url}" style="width:280px;height:180px;border-radius:16px;object-fit:cover;" /></div>'
+                    f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;margin-bottom:16px;">'
+                    f'<div style="padding:10px 14px;background:rgba(38,26,20,0.4);border-radius:12px;"><span style="color:#A49C94;font-size:13px;">Quality</span><br><span style="color:#F7F3ED;font-weight:600;font-size:17px;">{prop["quality"]}/10</span></div>'
+                    f'<div style="padding:10px 14px;background:rgba(38,26,20,0.4);border-radius:12px;"><span style="color:#A49C94;font-size:13px;">Area</span><br><span style="color:#F7F3ED;font-weight:600;font-size:17px;">{prop["area"]:,} sqft</span></div>'
+                    f'<div style="padding:10px 14px;background:rgba(38,26,20,0.4);border-radius:12px;"><span style="color:#A49C94;font-size:13px;">Garage</span><br><span style="color:#F7F3ED;font-weight:600;font-size:17px;">{prop["garage"]} car</span></div>'
+                    f'<div style="padding:10px 14px;background:rgba(38,26,20,0.4);border-radius:12px;"><span style="color:#A49C94;font-size:13px;">Year</span><br><span style="color:#F7F3ED;font-weight:600;font-size:17px;">{prop["year"]}</span></div></div>'
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(38,26,20,0.4);border-radius:12px;">'
+                    f'<span style="color:#A49C94;font-size:13px;">{prop["similarity"]}% match</span>'
+                    f'<span style="color:{diff_color_s};font-weight:600;font-size:14px;">{price_diff_sign}${prop["price_diff"]:,.0f}</span></div></div>',
                     unsafe_allow_html=True,
                 )
 
     # ── APPRECIATION FORECAST ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
-    st.caption("Growth Projection")
-    st.subheader("Appreciation Forecast")
-    st.markdown(f'<p style="color:rgba(248,242,235,0.45);">Projected property value growth based on {forecast["rate_label"].lower()} ({forecast["annual_rate"]}% annual) trends in {nb_insights["name"]}.</p>', unsafe_allow_html=True)
-    fc_cols = st.columns(len(forecast["forecasts"]))
-    for i, fc in enumerate(forecast["forecasts"]):
-        with fc_cols[i]:
-            st.metric(label=fc["label"], value=f"${fc['value']:,.0f}", delta=f"+${fc['gain']:,.0f} (+{fc['gain_pct']}%)")
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="margin-bottom:32px;">'
+        '<div style="color:#A49C94;font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Growth Projection</div>'
+        '<h2 style="font-family:Playfair Display,serif;font-size:34px;color:#F2C56A;font-weight:700;letter-spacing:-0.5px;margin:0;">Appreciation Forecast</h2>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(f'<p style="color:#A49C94;">Projected property value growth based on {forecast["rate_label"].lower()} ({forecast["annual_rate"]}% annual) trends in {nb_insights["name"]}.</p>', unsafe_allow_html=True)
+    fc_html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">'
+    for fc in forecast["forecasts"]:
+        fc_html += (
+            f'<div class="forecast-card" style="background:rgba(215,162,78,0.06);border:1px solid rgba(215,162,78,0.15);border-radius:12px;padding:20px;text-align:center;">'
+            f'<div class="forecast-year" style="color:rgba(248,245,240,0.5);font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">{fc["label"]}</div>'
+            f'<div class="forecast-val" style="font-family:Playfair Display,serif;font-size:32px;color:#D7A24E;font-weight:700;">${fc["value"]:,.0f}</div>'
+            f'<div style="color:#4CAF50;font-size:14px;font-weight:600;margin-top:8px;">+${fc["gain"]:,.0f} (+{fc["gain_pct"]}%)</div>'
+            f'</div>'
+        )
+    fc_html += '</div>'
+    st.markdown(fc_html, unsafe_allow_html=True)
     st.caption(forecast["disclaimer"])
 
     # ── INVESTMENT RISK ANALYSIS ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     st.caption("Risk Assessment")
     st.subheader("Investment Risk Analysis")
-    st.markdown(f'<p style="color:rgba(248,242,235,0.45);">{risk_analysis["risk_desc"]}</p>', unsafe_allow_html=True)
-    sev_colors = {"high": "#FF6B6B", "moderate": "#FFD060", "low": "#4ECB8D"}
+    st.markdown(f'<p style="color:#A49C94;">{risk_analysis["risk_desc"]}</p>', unsafe_allow_html=True)
+    sev_colors = {"high": "#E57373", "moderate": "#FFD060", "low": "#4CAF50"}
 
     risk_header_l, risk_header_r = st.columns([1, 2])
     with risk_header_l:
         st.markdown(
             f'<div class="premium-card" style="text-align:center;">'
             f'<div style="display:inline-block;padding:8px 20px;border-radius:100px;font-size:14px;font-weight:700;border:1px solid {risk_analysis["risk_color"]};color:{risk_analysis["risk_color"]};">{risk_analysis["risk_level"]} Risk</div>'
-            f'<div style="margin-top:12px;color:rgba(248,242,235,0.45);font-size:13px;">Protection Score: <strong style="color:#FAF2EB;">{risk_analysis["protection_score"]}/100</strong></div></div>',
+            f'<div style="margin-top:12px;color:#A49C94;font-size:13px;">Protection Score: <strong style="color:#F7F3ED;">{risk_analysis["protection_score"]}/100</strong></div></div>',
             unsafe_allow_html=True,
         )
     with risk_header_r:
         for rf in risk_analysis["factors"]:
             sev_color = sev_colors.get(rf["severity"], "#FFD060")
             st.markdown(
-                f'<div class="premium-card" style="margin-bottom:8px;padding:12px 16px;">'
+                f'<div class="premium-card" style="margin-bottom:8px;padding:14px 18px;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;">'
-                f'<div><strong style="color:#FAF2EB;">{rf["icon"]} {rf["factor"]}</strong><br>'
-                f'<span style="color:rgba(248,242,235,0.45);font-size:13px;">{rf["detail"]}</span></div>'
+                f'<div><strong style="color:#F7F3ED;">{rf["icon"]} {rf["factor"]}</strong><br>'
+                f'<span style="color:#A49C94;font-size:13px;">{rf["detail"]}</span></div>'
                 f'<span style="padding:4px 12px;border-radius:100px;font-size:11px;font-weight:700;border:1px solid {sev_color};color:{sev_color};">{rf["severity"].upper()}</span></div></div>',
                 unsafe_allow_html=True,
             )
@@ -924,7 +1434,7 @@ if predict_clicked:
             st.info("No significant risk factors detected. Strong investment profile.")
 
     # ── TECHNICAL DETAILS ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     with st.expander("Technical Details - Model Performance & Methodology", expanded=False):
         tc1, tc2, tc3, tc4 = st.columns(4)
         with tc1:
@@ -963,20 +1473,20 @@ if predict_clicked:
             st.metric(label="Avg Quality", value=f"{ds['avg_quality']}/10")
 
     # ── NEXT ACTIONS ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     next_actions = generate_next_actions()
     st.caption("Next Steps")
     st.subheader("What Would You Like To Do?")
     for a in next_actions:
         st.markdown(
-            f'<div class="premium-card" style="margin-bottom:12px;">'
-            f'<strong style="color:#FAF2EB;">{a["icon"]} {a["title"]}</strong><br>'
-            f'<span style="color:rgba(248,242,235,0.55);font-size:14px;">{a["desc"]}</span></div>',
+            f'<div class="premium-card" style="margin-bottom:8px;">'
+            f'<strong style="color:#F7F3ED;">{a["icon"]} {a["title"]}</strong><br>'
+            f'<span style="color:#D5D1CC;font-size:14px;">{a["desc"]}</span></div>',
             unsafe_allow_html=True,
         )
 
     # ── DOWNLOAD REPORT ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     from utils.pdf_report import generate_pdf_report
 
     try:
@@ -986,7 +1496,7 @@ if predict_clicked:
 
     st.caption("Export")
     st.subheader("Download Report")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);">Export this valuation as a professional PDF report.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#A49C94;">Export this valuation as a professional PDF report.</p>', unsafe_allow_html=True)
 
     dl_col1, dl_col2, dl_col3 = st.columns([1, 2, 1])
     with dl_col2:
@@ -996,18 +1506,18 @@ if predict_clicked:
             st.info("PDF report is temporarily unavailable. Please try again later.")
 
     # ── RECENT PREDICTIONS ──
-    st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
     history = get_history()
     if history:
         st.caption("History")
         st.subheader("Recent Predictions")
-        for h in history:
+        for h in history[-5:]:
             st.markdown(
-                f'<div class="premium-card" style="margin-bottom:8px;padding:14px 20px;">'
+                f'<div class="premium-card" style="margin-bottom:8px;padding:14px 18px;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;">'
-                f'<div><span style="color:rgba(248,242,235,0.4);font-size:12px;">{h["timestamp"]}</span><br>'
-                f'<span style="color:rgba(248,242,235,0.55);font-size:13px;">Q{h["quality"]} | {h["area"]:,} sq ft | {h["neighborhood"]}</span></div>'
-                f'<div style="text-align:right;"><div style="font-family:Playfair Display,serif;font-size:20px;color:#D4A84E;font-weight:700;">${h["price"]:,.0f}</div>'
+                f'<div><span style="color:rgba(248,245,240,0.4);font-size:12px;">{h["timestamp"]}</span><br>'
+                f'<span style="color:#D5D1CC;font-size:13px;">Q{h["quality"]} | {h["area"]:,} sq ft | {h["neighborhood"]}</span></div>'
+                f'<div style="text-align:right;"><div style="font-family:Playfair Display,serif;font-size:20px;color:#D7A24E;font-weight:700;">${h["price"]:,.0f}</div>'
                 f'<div style="color:{get_score_color(h["investment_score"])};font-weight:600;font-size:13px;">{h["investment_score"]}/100</div></div></div></div>',
                 unsafe_allow_html=True,
             )
@@ -1015,7 +1525,7 @@ if predict_clicked:
 # ============================================================
 # ABOUT
 # ============================================================
-st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.12),transparent);"></div>', unsafe_allow_html=True)
 
 st.markdown('<div id="about"></div>', unsafe_allow_html=True)
 st.caption("About")
@@ -1025,13 +1535,9 @@ about_l, about_r = st.columns([2, 1])
 with about_l:
     st.markdown("**Machine Learning Meets Real Estate**")
     st.markdown(
-        "HomeSense AI uses a Linear Regression model trained on the Ames Housing Dataset - "
-        "one of the most comprehensive real estate datasets available with 1,460 property records "
-        "and 245 encoded features."
-    )
-    st.markdown(
-        "Every prediction is backed by statistical rigor and full explainability. "
-        "No black boxes - every factor contributing to the price is transparent and interpretable."
+        "HomeSense AI uses a Linear Regression model trained on the Ames Housing Dataset "
+        "with 1,460 property records and 245 encoded features. Every prediction includes full "
+        "explainability - no black boxes."
     )
 with about_r:
     ac1, ac2 = st.columns(2)
@@ -1045,33 +1551,65 @@ with about_r:
 # ============================================================
 # FOOTER
 # ============================================================
-st.markdown('<div class="section-divider" style="max-width:1200px;margin:40px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,78,0.12),transparent);"></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.20),transparent);"></div>', unsafe_allow_html=True)
+st.markdown(
+    '<div style="background:linear-gradient(180deg,rgba(13,7,5,0.0),rgba(13,7,5,0.5) 25%,rgba(30,18,12,0.7) 100%);'
+    'border-top:1px solid rgba(215,162,78,0.08);margin:0 -60px;padding:60px 60px 32px;">',
+    unsafe_allow_html=True,
+)
 
 fc1, fc2, fc3, fc4 = st.columns([2, 1, 1, 1])
 with fc1:
     st.markdown("**HomeSense AI**")
-    st.markdown('<p style="color:rgba(248,242,235,0.45);font-size:14px;">Premium AI-powered real estate valuation platform. Built with machine learning, explainable AI, and a commitment to transparency.</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="color:#A49C94;font-size:15px;line-height:1.8;">'
+        'Luxury AI Real Estate Valuation<br>'
+        'Built using</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">'
+        '<span style="padding:6px 14px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:8px;color:#D7A24E;font-size:13px;font-weight:600;">Python</span>'
+        '<span style="padding:6px 14px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:8px;color:#D7A24E;font-size:13px;font-weight:600;">Streamlit</span>'
+        '<span style="padding:6px 14px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:8px;color:#D7A24E;font-size:13px;font-weight:600;">Scikit-learn</span>'
+        '<span style="padding:6px 14px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:8px;color:#D7A24E;font-size:13px;font-weight:600;">Plotly</span>'
+        '<span style="padding:6px 14px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:8px;color:#D7A24E;font-size:13px;font-weight:600;">Linear Regression</span>'
+        '<span style="padding:6px 14px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:8px;color:#D7A24E;font-size:13px;font-weight:600;">Explainable AI</span>'
+        '<span style="padding:6px 14px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:8px;color:#D7A24E;font-size:13px;font-weight:600;">Ames Housing Dataset</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 with fc2:
-    st.markdown("**Product**")
-    st.markdown("Predict")
-    st.markdown("Analytics")
-    st.markdown("About")
+    st.markdown("**Metrics**")
+    st.markdown(
+        '<div style="color:#A49C94;font-size:15px;line-height:2;">'
+        'R\u00b2 = 92.07%<br>'
+        'MAE: $27,773<br>'
+        'RMSE: $64,802</div>',
+        unsafe_allow_html=True,
+    )
 with fc3:
-    st.markdown("**Technology**")
-    st.markdown("Python")
-    st.markdown("Streamlit")
-    st.markdown("Scikit-learn")
-    st.markdown("Plotly")
+    st.markdown("**Contact Us**")
+    st.markdown(
+        '<div style="color:#A49C94;font-size:15px;line-height:2;">'
+        '<a href="https://github.com" style="color:#D7A24E;text-decoration:none;">GitHub</a><br>'
+        '<a href="https://linkedin.com" style="color:#D7A24E;text-decoration:none;">LinkedIn</a><br>'
+        '<a href="mailto:bobby2992006@gmail.com" style="color:#D7A24E;text-decoration:none;">Email</a></div>',
+        unsafe_allow_html=True,
+    )
 with fc4:
-    st.markdown("**Details**")
-    st.markdown("Ames Housing Dataset")
-    st.markdown("68% Within 10% Accuracy")
-    st.markdown("MAE: $27,773")
-    st.markdown("Model Version 1.0")
+    st.markdown("**Version**")
+    st.markdown(
+        '<div style="color:#A49C94;font-size:15px;line-height:2;">'
+        'v1.0<br>'
+        '2026</div>',
+        unsafe_allow_html=True,
+    )
 
-st.markdown("---")
-fc_b1, fc_b2 = st.columns([1, 1])
-with fc_b1:
-    st.caption("2026 HomeSense AI. All rights reserved.")
-with fc_b2:
-    st.caption("Python | Scikit-learn | Streamlit | Plotly")
+st.markdown(
+    '<div style="border-top:1px solid rgba(215,162,78,0.08);margin-top:32px;padding-top:20px;'
+    'display:flex;justify-content:space-between;align-items:center;">'
+    '<span style="color:#A49C94;font-size:14px;">2026 HomeSense AI. All rights reserved.</span>'
+    '<span style="color:#A49C94;font-size:13px;">Version 1.0 | R\u00b2 = 92.07%</span></div></div>',
+    unsafe_allow_html=True,
+)
