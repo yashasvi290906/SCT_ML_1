@@ -304,6 +304,11 @@ div[data-testid="stHorizontalBlock"]{{gap:16px !important;padding:0 !important;}
   .premium-card{{padding:28px !important;border-radius:20px !important;}}
   .facts-grid{{grid-template-columns:1fr;}}
   .section-divider{{margin:80px auto !important;}}
+  .assess-grid{{grid-template-columns:repeat(2,1fr) !important;}}
+  .footer-grid{{display:flex !important;flex-direction:column !important;}}
+  .comparison-row{{flex-wrap:wrap !important;gap:8px !important;}}
+  .comparison-row > span{{min-width:auto !important;font-size:14px !important;}}
+  [style*="margin:0 -60px"]{{margin:0 -24px !important;padding:48px 24px 28px !important;}}
 }}
 
 /* ===== RESPONSIVE: MOBILE (max-width 640px) ===== */
@@ -338,6 +343,11 @@ div[data-testid="stHorizontalBlock"]{{gap:16px !important;padding:0 !important;}
   .fact-item{{padding:12px 16px;}}
   .fact-label{{font-size:13px;}}
   .fact-value{{font-size:15px;}}
+  .assess-grid{{grid-template-columns:1fr !important;}}
+  .footer-grid{{grid-template-columns:1fr !important;}}
+  .comparison-row{{flex-direction:column !important;align-items:flex-start !important;gap:6px !important;}}
+  .comparison-row > span{{min-width:auto !important;font-size:13px !important;}}
+  [style*="margin:0 -60px"]{{margin:0 -16px !important;padding:40px 16px 24px !important;}}
 }}
 
 /* ===== RESPONSIVE: VERY SMALL (max-width 400px) ===== */
@@ -1061,7 +1071,7 @@ if predict_clicked:
     luxury_label = get_score_label(scores["luxury"])
     investment_label = get_score_label(scores["investment"])
     st.markdown(
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">'
+        '<div class="assess-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">'
         f'<div class="assess-card"><div class="assess-label">Overall</div><div class="assess-value">{overall_label}</div></div>'
         f'<div class="assess-card"><div class="assess-label">Condition</div><div class="assess-value">{condition_label}</div></div>'
         f'<div class="assess-card"><div class="assess-label">Luxury</div><div class="assess-value">{luxury_label}</div></div>'
@@ -1308,12 +1318,12 @@ if predict_clicked:
         diff_sign = "+" if comp["difference"] > 0 else ""
         st.markdown(
             f'<div class="premium-card" style="margin-bottom:8px;padding:14px 18px;">'
-            f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+            f'<div class="comparison-row" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
             f'<span style="color:#FFFFFF;font-weight:600;min-width:120px;">{comp["name"]}</span>'
             f'<span style="color:#D7A24E;font-weight:700;">{comp["yours"]}{comp["unit"]}</span>'
             f'<span style="color:rgba(248,245,240,0.3);">vs</span>'
             f'<span style="color:#F0ECE8;">{comp["average"]}{comp["unit"]}</span>'
-            f'<span style="color:{diff_color};font-weight:600;">{diff_sign}{comp["difference"]}{comp["unit"]} ({diff_sign}{comp["pct"]}%)</span>'
+            f'<span style="color:{diff_color};font-weight:600;word-break:break-word;">{diff_sign}{comp["difference"]}{comp["unit"]} ({diff_sign}{comp["pct"]}%)</span>'
             f'</div></div>',
             unsafe_allow_html=True,
         )
@@ -1629,8 +1639,8 @@ with about_r:
 st.markdown('<div class="section-divider" style="max-width:1450px;margin:110px auto;height:1px;background:linear-gradient(90deg,transparent,rgba(215,162,78,0.20),transparent);"></div>', unsafe_allow_html=True)
 st.markdown(
     '<div style="background:rgba(18,10,6,0.80);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);'
-    'border-top:1px solid rgba(215,162,78,0.08);margin:0 -60px;padding:60px 60px 32px;">'
-    '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px;">'
+    'border-top:1px solid rgba(215,162,78,0.08);margin:0 -60px;padding:60px 60px 32px;overflow:hidden;">'
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:32px;">'
 
     # Col 1 - Brand
     '<div>'
@@ -1646,24 +1656,21 @@ st.markdown(
     '<span style="padding:6px 14px;background:rgba(215,162,78,0.1);border:1px solid rgba(215,162,78,0.2);border-radius:8px;color:#D7A24E;font-size:13px;font-weight:600;">Ames Housing Dataset</span>'
     '</div></div>'
 
-    # Col 2 - Metrics
+    # Col 2+3 - Metrics and Contact side by side
+    '<div style="display:flex;gap:40px;">'
+    # Metrics
     '<div>'
     '<div style="color:#FFFFFF;font-size:18px;font-weight:700;margin-bottom:12px;">Metrics</div>'
     '<div style="color:#FFFFFF;font-size:15px;line-height:2;font-weight:600;">'
     'R\u00b2 = 92.07%<br>MAE: $27,773<br>RMSE: $64,802</div></div>'
-
-    # Col 3 - Contact
+    # Contact
     '<div>'
     '<div style="color:#FFFFFF;font-size:18px;font-weight:700;margin-bottom:12px;">Contact Us</div>'
     '<div style="color:#FFFFFF;font-size:15px;line-height:2;font-weight:600;">'
     '<a href="https://github.com" style="color:#D7A24E;text-decoration:none;">GitHub</a><br>'
     '<a href="https://linkedin.com" style="color:#D7A24E;text-decoration:none;">LinkedIn</a><br>'
     '<a href="mailto:bobby2992006@gmail.com" style="color:#D7A24E;text-decoration:none;">Email</a></div></div>'
-
-    # Col 4 - Version
-    '<div>'
-    '<div style="color:#FFFFFF;font-size:18px;font-weight:700;margin-bottom:12px;">Version</div>'
-    '<div style="color:#FFFFFF;font-size:15px;line-height:2;font-weight:600;">v1.0<br>2026</div></div>'
+    '</div>'
 
     '</div>'
     '<div style="border-top:1px solid rgba(215,162,78,0.08);margin-top:32px;padding-top:20px;'
