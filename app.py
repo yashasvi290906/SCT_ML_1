@@ -305,6 +305,7 @@ div[data-testid="stHorizontalBlock"]{{gap:16px !important;padding:0 !important;}
   .facts-grid{{grid-template-columns:1fr;}}
   .section-divider{{margin:80px auto !important;}}
   .assess-grid{{grid-template-columns:repeat(2,1fr) !important;}}
+  .appr-grid{{grid-template-columns:repeat(2,1fr) !important;}}
   .footer-grid{{display:flex !important;flex-direction:column !important;}}
   .comparison-row{{flex-wrap:wrap !important;gap:8px !important;}}
   .comparison-row > span{{min-width:auto !important;font-size:14px !important;}}
@@ -336,6 +337,7 @@ div[data-testid="stHorizontalBlock"]{{gap:16px !important;padding:0 !important;}
   .prop-image{{height:300px;}}
   .est-price{{font-size:34px;}}
   .invest-rating{{font-size:34px;}}
+  .forecast-val{{font-size:26px !important;}}
   .drive-row{{grid-template-columns:1fr;gap:8px;}}
   .sim-img{{width:100%;height:160px;}}
   .card-title{{font-size:20px;}}
@@ -344,6 +346,7 @@ div[data-testid="stHorizontalBlock"]{{gap:16px !important;padding:0 !important;}
   .fact-label{{font-size:13px;}}
   .fact-value{{font-size:15px;}}
   .assess-grid{{grid-template-columns:1fr !important;}}
+  .appr-grid{{grid-template-columns:1fr !important;}}
   .footer-grid{{grid-template-columns:1fr !important;}}
   .comparison-row{{flex-direction:column !important;align-items:flex-start !important;gap:6px !important;}}
   .comparison-row > span{{min-width:auto !important;font-size:13px !important;}}
@@ -1476,7 +1479,7 @@ if predict_clicked:
         unsafe_allow_html=True,
     )
     st.markdown(f'<p style="color:#B5AFA8;">Projected property value growth based on {forecast["rate_label"].lower()} ({forecast["annual_rate"]}% annual) trends in {nb_insights["name"]}.</p>', unsafe_allow_html=True)
-    fc_html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">'
+    fc_html = '<div class="appr-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">'
     for fc in forecast["forecasts"]:
         fc_html += (
             f'<div class="forecast-card" style="background:rgba(215,162,78,0.06);border:1px solid rgba(215,162,78,0.15);border-radius:12px;padding:20px;text-align:center;">'
