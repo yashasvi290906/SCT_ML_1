@@ -10,9 +10,9 @@
     --gold: #D7A24E;
     --gold-dim: #C4942A;
     --gold-light: #E8C060;
-    --text-primary: #F7F3ED;
-    --text-secondary: #D5D1CC;
-    --text-muted: #A49C94;
+    --text-primary: #FFFFFF;
+    --text-secondary: #F0ECE8;
+    --text-muted: #B5AFA8;
     --card-bg: rgba(38,26,20,0.65);
     --green: #4CAF50;
     --red: #E57373;
@@ -29,7 +29,7 @@ html, body, [class*="css"] { font-family: 'Inter', -apple-system, BlinkMacSystem
 html { scroll-behavior: smooth; }
 
 /* SECTION DIVIDER */
-.section-divider { max-width: 1450px; margin: 110px auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(215,162,78,0.20), transparent); }
+.section-divider { max-width: 1450px; margin: 110px auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(215,162,78,0.12), transparent); }
 
 /* PREMIUM CARD */
 .premium-card {
@@ -53,8 +53,8 @@ html { scroll-behavior: smooth; }
 .green-text { color: #4CAF50; }
 .red-text { color: #E57373; }
 .amber-text { color: #FFD060; }
-.muted-text { color: #A49C94; }
-.primary-text { color: #F7F3ED; }
+.muted-text { color: #B5AFA8; }
+.primary-text { color: #FFFFFF; }
 
 /* ANIMATIONS */
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -64,13 +64,13 @@ html { scroll-behavior: smooth; }
 
 /* STREAMLIT WIDGET OVERRIDES */
 .stSlider > div > div > div > div, .stSlider > div > div > div > div > div { background-color: #D7A24E !important; border-color: #D7A24E !important; }
-.stNumberInput > div > div > input { background: rgba(38,26,20,0.65) !important; border: 1px solid rgba(215,162,78,0.10) !important; border-radius: 14px !important; color: #F7F3ED !important; padding: 14px 18px !important; font-size: 17px !important; }
+.stNumberInput > div > div > input { background: rgba(38,26,20,0.65) !important; border: 1px solid rgba(215,162,78,0.10) !important; border-radius: 14px !important; color: #FFFFFF !important; padding: 14px 18px !important; font-size: 18px !important; }
 .stNumberInput > div > div > input:focus { border-color: rgba(215,162,78,0.4) !important; box-shadow: 0 0 0 2px rgba(215,162,78,0.10) !important; }
-.stSelectbox > div > div { background: rgba(38,26,20,0.65) !important; border: 1px solid rgba(215,162,78,0.10) !important; border-radius: 14px !important; color: #F7F3ED !important; }
+.stSelectbox > div > div { background: rgba(38,26,20,0.65) !important; border: 1px solid rgba(215,162,78,0.10) !important; border-radius: 14px !important; color: #FFFFFF !important; }
 .stButton > button, .stDownloadButton > button {
     background: linear-gradient(135deg, #D7A24E, #C4942A, #B8862A) !important; color: #120A06 !important;
     border: none !important; border-radius: 14px !important; padding: 14px 32px !important;
-    font-weight: 700 !important; font-size: 17px !important; width: 100% !important;
+    font-weight: 700 !important; font-size: 18px !important; width: 100% !important;
     box-shadow: 0 4px 24px rgba(215,162,78,0.35), 0 0 0 1px rgba(215,162,78,0.30) inset, 0 1px 0 rgba(255,255,255,0.10) inset !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     letter-spacing: 0.3px;
