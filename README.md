@@ -20,7 +20,7 @@
 
 ## Overview
 
-HomeSense AI is a full-stack machine learning application that predicts residential property prices using Linear Regression trained on the Ames Housing Dataset. The platform delivers professional-grade valuations with full transparency — every prediction comes with an AI verdict, value drivers, investment analysis, strength/weakness assessment, and an exportable PDF report.
+HomeSense AI is a full-stack machine learning application that predicts residential property prices using Linear Regression trained on the Ames Housing Dataset. The platform delivers professional-grade valuations with full transparency — every prediction comes with an AI verdict, value drivers, investment analysis, strength/weakness assessment, and an exportable PDF report
 
 Built with a luxury dark chocolate and gold glassmorphism UI, the application is designed to feel like a commercial SaaS product rather than a student project.
 
